@@ -153,6 +153,7 @@ function paint(direction) {
   // A transition can be skipped (hidden tab, rapid taps); the swap itself still runs.
   const transition = document.startViewTransition(swap);
   transition.ready.catch(() => {});
+  transition.updateCallbackDone.catch(() => {});
   transition.finished.catch(() => {});
 }
 

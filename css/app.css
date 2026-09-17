@@ -260,7 +260,6 @@ ul { list-style: none; }
 .input::placeholder { color: var(--neutral-400); }
 
 .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-:root[dir='rtl'] .chips { justify-content: flex-end; }
 .chip {
   display: inline-flex; align-items: center; gap: var(--space-1);
   min-height: var(--touch-min); padding-inline: var(--space-4);

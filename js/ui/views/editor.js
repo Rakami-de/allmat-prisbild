@@ -120,11 +120,11 @@ export function renderEditor(app, { id }) {
   });
 
   function chipGroup(labelKey, options, selected, onPick, labelFor) {
-    const group = h('div', { class: 'chips', role: 'radiogroup', 'aria-label': t(labelKey), dir: 'ltr' });
+    const group = h('div', { class: 'chips', role: 'radiogroup', 'aria-label': t(labelKey) });
     const paintChips = (value) => group.replaceChildren(...options.map((option) => h('button', {
       class: `chip ${option === value ? 'is-selected' : ''}`, role: 'radio', 'aria-checked': String(option === value),
       onclick: () => { onPick(option); paintChips(option); },
-    }, option === value ? icon('check', 'chip-check') : null, labelFor(option))));
+    }, option === value ? icon('check', 'chip-check') : null, h('span', { dir: option ? 'ltr' : null }, labelFor(option)))));
     paintChips(selected);
     return group;
   }
