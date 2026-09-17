@@ -1,0 +1,6 @@
+{
+  "name": "allmat-prisbild",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}
