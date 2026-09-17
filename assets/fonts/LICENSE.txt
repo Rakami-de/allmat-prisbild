@@ -1,0 +1,4 @@
+Barlow Condensed — Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow)
+Noto Sans Arabic — Copyright 2022 The Noto Project Authors (https://github.com/notofonts/arabic)
+
+Both are licensed under the SIL Open Font License, Version 1.1: https://openfontlicense.org

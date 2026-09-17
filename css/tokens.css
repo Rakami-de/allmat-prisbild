@@ -1,0 +1,169 @@
+:root {
+  --brand-red: #D10101;
+  --brand-green: #1A6309;
+  --brand-black: #0E0E0E;
+  --brand-white: #FFFFFF;
+
+  --neutral-0: #FFFFFF;
+  --neutral-50: #F7F7F4;
+  --neutral-100: #EFEFEB;
+  --neutral-200: #E1E2DC;
+  --neutral-300: #C6C8BF;
+  --neutral-400: #9A9D93;
+  --neutral-500: #72766C;
+  --neutral-600: #595D54;
+  --neutral-700: #383C34;
+  --neutral-800: #252821;
+  --neutral-900: #181B16;
+  --neutral-950: #10120F;
+
+  --ui-bg: var(--neutral-50);
+  --ui-surface: var(--neutral-0);
+  --ui-surface-raised: var(--neutral-0);
+  --ui-text: var(--brand-black);
+  --ui-text-muted: var(--neutral-600);
+  --ui-border: var(--neutral-200);
+  --ui-control-border: var(--neutral-500);
+  --ui-accent: var(--brand-green);
+  --ui-on-accent: #FFFFFF;
+  --ui-accent-soft: #E9F0E5;
+  --ui-danger: #B60000;
+  --ui-on-danger: #FFFFFF;
+  --ui-success: var(--brand-green);
+  --ui-warning: #805300;
+  --ui-focus: #1A6309;
+  --ui-scrim: #0E0E0E66;
+  --ui-disabled-bg: var(--neutral-100);
+  --ui-disabled-text: var(--neutral-600);
+
+  /* Export palette: invariant across device appearance. */
+  --image-red-paper: #FFFFFF;
+  --image-red-frame: #D10101;
+  --image-red-badge: #D10101;
+  --image-red-badge-stroke: #FFFFFF;
+  --image-red-price: #FFFFFF;
+  --image-red-ink: #0E0E0E;
+  --image-red-muted: #595D54;
+  --image-red-tag: #1A6309;
+  --image-red-tag-ink: #FFFFFF;
+  --image-red-weight: #FFFFFF;
+  --image-red-weight-ink: #0E0E0E;
+  --image-red-ornament: #D10101;
+
+  --image-green-paper: #FFFFFF;
+  --image-green-frame: #1A6309;
+  --image-green-badge: #FFFFFF;
+  --image-green-badge-stroke: #1A6309;
+  --image-green-price: #D10101;
+  --image-green-ink: #1A6309;
+  --image-green-muted: #595D54;
+  --image-green-tag: #1A6309;
+  --image-green-tag-ink: #FFFFFF;
+  --image-green-weight: #1A6309;
+  --image-green-weight-ink: #FFFFFF;
+  --image-green-ornament: #1A6309;
+
+  --image-black-paper: #FFFFFF;
+  --image-black-frame: #0E0E0E;
+  --image-black-badge: #0E0E0E;
+  --image-black-badge-stroke: #FFFFFF;
+  --image-black-price: #FFFFFF;
+  --image-black-ink: #0E0E0E;
+  --image-black-muted: #595D54;
+  --image-black-tag: #0E0E0E;
+  --image-black-tag-ink: #FFFFFF;
+  --image-black-weight: #0E0E0E;
+  --image-black-weight-ink: #FFFFFF;
+  --image-black-ornament: #0E0E0E;
+  --image-shadow: #0E0E0E26;
+  --image-logo-plate: #FFFFFF;
+
+  /* Both families are SIL OFL; load the Latin and Arabic subsets of Noto Sans Arabic. */
+  --font-display: 'Barlow Condensed', 'Noto Sans Arabic', sans-serif;
+  --font-ui: 'Noto Sans Arabic', sans-serif;
+  --font-price: 'Barlow Condensed', sans-serif;
+  --type-caption: 0.8125rem;
+  --type-label: 0.9375rem;
+  --type-body: 1.0625rem;
+  --type-title: 1.375rem;
+  --type-heading: 2rem;
+  --type-hero: 2.75rem;
+  --type-price-input: 3.5rem;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-heavy: 900;
+  --leading-tight: 1.1;
+  --leading-heading: 1.25;
+  --leading-body: 1.6;
+  --leading-arabic: 1.7;
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0em;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 30px;
+  --radius-pill: 999px;
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --layout-content-max: 560px;
+  --touch-min: 44px;
+  --control-height: 52px;
+  --action-height: 56px;
+  --border-hairline: 1px;
+  --focus-width: 3px;
+  --shadow-card: 0 2px 8px #0E0E0E08;
+  --shadow-raised: 0 8px 24px #0E0E0E12;
+  --shadow-sheet: 0 -8px 40px #0E0E0E1A;
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-scrim: 20;
+  --z-sheet: 30;
+  --z-toast: 40;
+  --motion-instant: 0ms;
+  --motion-press: 100ms;
+  --motion-fast: 160ms;
+  --motion-standard: 240ms;
+  --motion-sheet: 320ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ui-bg: var(--neutral-950);
+    --ui-surface: var(--neutral-900);
+    --ui-surface-raised: var(--neutral-800);
+    --ui-text: #F7F7F4;
+    --ui-text-muted: #BEC2B6;
+    --ui-border: #383C34;
+    --ui-control-border: #858B7C;
+    --ui-accent: #A8D991;
+    --ui-on-accent: #14320C;
+    --ui-accent-soft: #253C1E;
+    --ui-danger: #FF9690;
+    --ui-on-danger: #490000;
+    --ui-success: #A8D991;
+    --ui-warning: #EDC77E;
+    --ui-focus: #A8D991;
+    --ui-scrim: #00000099;
+    --ui-disabled-bg: #252821;
+    --ui-disabled-text: #BEC2B6;
+    --shadow-card: 0 2px 8px #0000001F;
+    --shadow-raised: 0 8px 24px #00000040;
+    --shadow-sheet: 0 -8px 40px #00000059;
+  }
+}
