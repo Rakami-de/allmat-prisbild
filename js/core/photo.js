@@ -4,6 +4,7 @@
 
 const MAX_EDGE = 2160;
 const STORED_QUALITY = 0.9;
+const THUMB_EDGE = 360;
 
 export async function loadImage(blob) {
   const url = URL.createObjectURL(blob);
@@ -35,8 +36,18 @@ export async function decodePhoto(file) {
   canvas.height = height;
   canvas.getContext('2d').drawImage(img, 0, 0, width, height);
   const blob = await canvasToBlob(canvas, STORED_QUALITY);
+
+  // Grid thumbnails: showing fifteen 2160px JPEGs at once is what gets a PWA killed on iOS.
+  const thumbScale = THUMB_EDGE / Math.min(width, height);
+  const thumbCanvas = document.createElement('canvas');
+  thumbCanvas.width = Math.round(width * thumbScale);
+  thumbCanvas.height = Math.round(height * thumbScale);
+  thumbCanvas.getContext('2d').drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+  const thumb = await canvasToBlob(thumbCanvas, 0.8);
+
   releaseCanvas(canvas);
-  return { blob, width, height };
+  releaseCanvas(thumbCanvas);
+  return { blob, thumb, width, height };
 }
 
 export function canvasToBlob(canvas, quality) {

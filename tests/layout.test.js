@@ -39,7 +39,7 @@ test('every realistic price fits inside the badge', () => {
 test('integer size never grows as the price gets longer', () => {
   const sizes = ['9', '24,95', '999,95', '1 299,95'].map((t) => layoutFor(t).price.intSize);
   for (let i = 1; i < sizes.length; i += 1) assert.ok(sizes[i] <= sizes[i - 1], sizes.join(' ≥ '));
-  assert.equal(sizes[0], 208);
+  assert.ok(sizes[0] > 208);
   assert.ok(sizes.at(-1) >= 96);
 });
 

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="sv">
+<meta charset="utf-8">
+<title>Render lab</title>
+<base href="../">
+<style>
+  body { margin: 16px; background: #d8d8d2; font: 14px system-ui; }
+  #grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  canvas { width: 100%; height: auto; display: block; box-shadow: 0 4px 16px #0003; }
+  figcaption { padding: 4px 0; }
+  figure { margin: 0; }
+</style>
+<input type="file" id="file" accept="image/*">
+<div id="grid"></div>
+<script type="module">
+  import { loadRenderAssets, renderItem } from './js/core/render.js';
+  import { loadImage } from './js/core/photo.js';
+
+  const blank = { price: '', unit: '', weight: '', name: '', note: '', mode: 'standard', oldPrice: '', multiQty: '' };
+  const samples = [
+    ['rod', { price: '9,95', unit: '/kg' }],
+    ['gron', { price: '24,95', unit: '/kg', name: 'Kvisttomater', note: 'Färska idag' }],
+    ['svart', { price: '99,95', weight: '5 kg', name: 'Mahmood Sella Basmati Ris' }],
+    ['rod', { price: '29,95', mode: 'kampanj', oldPrice: '39,95', unit: '/st', name: 'Kapya röd paprika' }],
+    ['gron', { price: '30', multiQty: '2', mode: 'nyhet', name: 'Citroner' }],
+    ['svart', { price: '1299,95', mode: 'kampanj', oldPrice: '1499', name: 'Olivolja Extra Virgin 5 liter dunk' , weight: '5 L'}],
+    ['rod', { price: '5' }],
+    ['gron', { price: '129,95', unit: '/100g', weight: '500 g' }],
+    ['svart', { price: '11,95', unit: '/kg', mode: 'nyhet' }],
+  ];
+
+  // Stand-in "produce" photo until a real one is picked.
+  function fakePhoto() {
+    const c = document.createElement('canvas');
+    c.width = 1500; c.height = 2000;
+    const g = c.getContext('2d');
+    g.fillStyle = '#c98a1a'; g.fillRect(0, 0, c.width, c.height);
+    for (let i = 0; i < 60; i += 1) {
+      const x = (i * 397) % c.width, y = (i * 613) % c.height, r = 190 + (i * 37) % 60;
+      const grad = g.createRadialGradient(x - r / 3, y - r / 3, r / 8, x, y, r);
+      grad.addColorStop(0, '#ffe36b'); grad.addColorStop(1, '#e09a12');
+      g.fillStyle = grad; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+    }
+    return c;
+  }
+
+  async function draw(photo) {
+    const assets = await loadRenderAssets();
+    const grid = document.getElementById('grid');
+    grid.replaceChildren();
+    for (const [colorway, fields] of samples) {
+      const figure = document.createElement('figure');
+      const canvas = document.createElement('canvas');
+      const layout = renderItem(canvas, { item: { fields: { ...blank, ...fields }, crop: { x: 0.5, y: 0.5, zoom: 1 } }, photo, colorway, assets });
+      const caption = document.createElement('figcaption');
+      caption.textContent = `${colorway} · int ${layout.price.intSize}px · ${layout.warnings.join(', ') || 'ok'}`;
+      figure.append(canvas, caption);
+      grid.append(figure);
+    }
+  }
+
+  document.getElementById('file').addEventListener('change', async (e) => draw(await loadImage(e.target.files[0])));
+  draw(fakePhoto());
+</script>
+</html>

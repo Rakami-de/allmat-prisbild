@@ -14,19 +14,19 @@ export const GEOMETRY = {
   frame: 20,
   frameSideGron: 32,
   photo: { x: 48, y: 144, w: 984, h: 720, r: 22 },
-  logoPlate: { x: 48, y: 40, w: 208, h: 88, r: 12 },
-  logoBox: { x: 60, y: 48, w: 184, h: 72 },
+  logoBox: { x: 48, y: 32, w: 136, h: 104 },
+  brand: { x: 196, baseline: 106, size: 60, gap: 14 },
   badge: { x: 456, y: 752, w: 576, h: 280, r: 42, stroke: 6 },
   priceX: [484, 1004],
   priceY: [788, 1008],
   priceYWithOld: [826, 1008],
   oldPriceY: [774, 812],
-  tag: { right: 1032, y: 58, h: 52, padX: 22, size: 30 },
+  tag: { right: 1032, y: 52, h: 64, padX: 26, size: 38 },
   stack: { x: 48, top: 884, bottom: 1032, maxW: 384, gap: 14 },
   weight: { x: 68, bottomInset: 20, h: 48, padX: 16, size: 26, minSize: 20, maxW: 384 },
 };
 
-const INT_MAX = 208;
+const INT_MAX = 290;
 const INT_MIN = 96;
 const RATIO = { dec: 0.48, kr: 0.24, unit: 0.26, multi: 0.3 };
 const UNIT_GAP = 10;
@@ -237,8 +237,8 @@ export function computeLayout({ fields, priceParts, oldPriceParts = null, colorw
     size: SIZE,
     frame: { top: GEOMETRY.frame, side },
     photo: GEOMETRY.photo,
-    logoPlate: GEOMETRY.logoPlate,
     logoBox: GEOMETRY.logoBox,
+    brand: GEOMETRY.brand,
     badge: GEOMETRY.badge,
     price, tag: modeTag(fields.mode, measure), weight, name, note, warnings,
   };
