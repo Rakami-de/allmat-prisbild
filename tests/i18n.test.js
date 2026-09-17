@@ -16,13 +16,23 @@ test('Arabic is right-to-left', () => {
   assert.equal(i18n.t('home.takePhoto'), 'التقط صورة');
 });
 
+// '.one' keys are Swedish singular forms; Arabic phrases its counts so it needs none.
+const base = (table) => Object.keys(table).filter((key) => !key.endsWith('.one')).sort();
+
 test('both languages define exactly the same keys', () => {
-  assert.deepEqual(Object.keys(TABLES.ar).sort(), Object.keys(TABLES.sv).sort());
+  assert.deepEqual(base(TABLES.ar), base(TABLES.sv));
+});
+
+test('Swedish uses the singular form for one', () => {
+  const { t } = createI18n('sv');
+  assert.equal(t('output.count', { n: 1 }), '1 bild');
+  assert.equal(t('output.count', { n: 3 }), '3 bilder');
+  assert.equal(createI18n('ar').t('output.count', { n: 1 }), 'عدد الصور: 1');
 });
 
 test('placeholders used in one language exist in the other', () => {
   const vars = (s) => (s.match(/\{\w+\}/g) ?? []).sort();
-  for (const key of Object.keys(TABLES.sv)) {
+  for (const key of base(TABLES.sv)) {
     assert.deepEqual(vars(TABLES.ar[key]), vars(TABLES.sv[key]), key);
   }
 });

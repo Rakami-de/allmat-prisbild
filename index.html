@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="sv" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <title>Allmat Prisbild</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="description" content="Skapa prisbilder för Allmat Värmland.">
+
+  <!-- Installed-app behaviour on iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Prisbild">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#10120F" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./assets/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./assets/icons/icon-192.png">
+
+  <link rel="preload" href="./assets/fonts/barlow-condensed-900-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./assets/fonts/noto-sans-arabic-var-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./css/tokens.css">
+  <link rel="stylesheet" href="./css/app.css">
+</head>
+<body>
+  <div id="view" class="view"></div>
+  <div id="layer" class="layer"></div>
+
+  <!-- Two inputs on purpose: one opens the camera directly, one opens the photo library with multi-select. -->
+  <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+  <input id="libraryInput" type="file" accept="image/*" multiple hidden>
+
+  <script type="module" src="./js/ui/app.js"></script>
+</body>
+</html>

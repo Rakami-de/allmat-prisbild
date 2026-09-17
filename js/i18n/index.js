@@ -10,7 +10,9 @@ export function createI18n(lang) {
   const table = TABLES[active];
 
   function t(key, vars = {}) {
-    const template = table[key] ?? sv[key] ?? key;
+    // Swedish singular: 'x.one' wins when n is 1 ("1 bild", not "1 bilder").
+    const one = vars.n === 1 ? table[`${key}.one`] : undefined;
+    const template = one ?? table[key] ?? sv[key] ?? key;
     return template.replace(/\{(\w+)\}/g, (whole, name) => (name in vars ? String(vars[name]) : whole));
   }
 
