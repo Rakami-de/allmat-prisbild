@@ -14,6 +14,9 @@ export const STORE = {
   logoFull: './assets/brand/logo-full.png',
   logoMark: './assets/brand/logo-mark.png',
   shadow: '#0E0E0E40',
+  // Optional ornament per colourway, e.g. { rod: './assets/frames/pattern-rod.png' }. Add to sw.js SHELL too.
+  patterns: {},
+  patternStrength: 0.14,
   colorways: {
     rod: {
       swatch: RED, paper: WHITE, frame: RED, badge: RED, badgeStroke: WHITE, price: WHITE,

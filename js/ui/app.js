@@ -57,12 +57,7 @@ export const app = {
   updateBatch(fn, { repaint = true } = {}) {
     state.batch = fn(state.batch);
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(async () => {
-      try {
-        await storage.saveBatch(state.batch);
-        document.dispatchEvent(new CustomEvent('allmat:saved'));
-      } catch (error) { app.fail(error); }
-    }, SAVE_DELAY);
+    saveTimer = setTimeout(flushSave, SAVE_DELAY);
     if (repaint) paint('none');
   },
 
@@ -129,6 +124,22 @@ export const app = {
     });
   },
 };
+
+// ---------- persistence ----------
+
+async function flushSave() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  try {
+    await storage.saveBatch(state.batch);
+    document.dispatchEvent(new CustomEvent('allmat:saved'));
+  } catch (error) { app.fail(error); }
+}
+
+// iOS may kill a backgrounded PWA without warning: never leave an edit waiting on the debounce.
+const flushIfPending = () => { if (saveTimer) flushSave(); };
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushIfPending(); });
+addEventListener('pagehide', flushIfPending);
 
 // ---------- painting ----------
 

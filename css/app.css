@@ -124,6 +124,7 @@ ul { list-style: none; }
   border: var(--border-hairline) solid var(--ui-border);
   transition: transform var(--motion-press) var(--ease-out);
 }
+a.round { color: inherit; text-decoration: none; }
 .round:active:not(:disabled) { transform: scale(0.92); }
 .round:disabled { opacity: 0.35; }
 

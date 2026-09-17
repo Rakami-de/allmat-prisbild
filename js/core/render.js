@@ -21,9 +21,19 @@ export function loadRenderAssets() {
     const logo = new Image();
     logo.src = STORE.logoMark;
     await logo.decode();
-    return { logo };
+    return { logo, patterns: await loadPatterns() };
   })().catch((error) => { assetsPromise = null; throw { code: 'font', cause: error }; });
   return assetsPromise;
+}
+
+// Optional decorative artwork per colourway. The app is complete without it.
+async function loadPatterns() {
+  const entries = await Promise.all(Object.entries(STORE.patterns).map(async ([key, url]) => {
+    const img = new Image();
+    img.src = url;
+    try { await img.decode(); return [key, img]; } catch { return [key, null]; }
+  }));
+  return Object.fromEntries(entries);
 }
 
 const cssFont = ({ family, weight, size }) => `${weight} ${size}px "${family}"`;
@@ -106,6 +116,19 @@ export function renderItem(canvas, { item, photo, colorway, assets }) {
   ctx.fillRect(0, 0, SIZE, SIZE);
   ctx.fillStyle = colors.paper;
   ctx.fillRect(layout.frame.side, layout.frame.top, SIZE - layout.frame.side * 2, SIZE - layout.frame.top * 2);
+
+  // Ornament: multiplied onto the paper at low strength, so a white background in the artwork vanishes.
+  const pattern = assets.patterns?.[colorway];
+  if (pattern) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(layout.frame.side, layout.frame.top, SIZE - layout.frame.side * 2, SIZE - layout.frame.top * 2);
+    ctx.clip();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.globalAlpha = STORE.patternStrength;
+    ctx.drawImage(pattern, 0, 0, SIZE, SIZE);
+    ctx.restore();
+  }
 
   drawPhoto(ctx, layout.photo, photo, item.crop);
 
