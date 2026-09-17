@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="sv">
+<meta charset="utf-8">
+<title>Composition study</title>
+<base href="../">
+<link rel="stylesheet" href="./css/app.css">
+<style>
+  html, body { height: auto; overflow: auto; opacity: 1; background: #cfcfc9; user-select: auto; }
+  body { margin: 16px; font: 14px system-ui; color: #111; }
+  #grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  canvas { width: 100%; height: auto; display: block; box-shadow: 0 4px 16px #0003; }
+  figure { margin: 0; } figcaption { padding: 6px 0; font-weight: 600; }
+</style>
+<input type="file" id="file" accept="image/*">
+<div id="grid"></div>
+<script type="module">
+  const RED = '#D10101', GREEN = '#1A6309', BLACK = '#0E0E0E', PAPER = '#FFFFFF', INK = '#0E0E0E', MUTED = '#6A6E65';
+  const WAYS = { rod: { block: RED, on: '#fff', accent: RED }, gron: { block: GREEN, on: '#fff', accent: GREEN }, svart: { block: BLACK, on: '#fff', accent: BLACK } };
+  const S = 1080;
+
+  await Promise.all([600, 700, 900].map((w) => new FontFace('Barlow Condensed', `url(./assets/fonts/barlow-condensed-${w}-latin.woff2)`, { weight: String(w) }).load().then((f) => document.fonts.add(f))));
+  await new FontFace('Noto Sans Arabic', 'url(./assets/fonts/noto-sans-arabic-var-latin.woff2)', { weight: '400 900' }).load().then((f) => document.fonts.add(f));
+  const logo = await new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.src = './assets/brand/logo-mark.png'; });
+
+  function fakePhoto() {
+    const c = document.createElement('canvas'); c.width = 1600; c.height = 1600;
+    const g = c.getContext('2d');
+    const bg = g.createLinearGradient(0, 0, 1600, 1600); bg.addColorStop(0, '#3a4a3f'); bg.addColorStop(1, '#1f2a24');
+    g.fillStyle = bg; g.fillRect(0, 0, 1600, 1600);
+    const spots = [[420, 520, 300], [980, 430, 270], [1250, 900, 290], [640, 1050, 320], [1080, 1330, 250], [250, 1240, 260], [200, 200, 220], [1400, 250, 200]];
+    for (const [x, y, r] of spots) {
+      g.save(); g.shadowColor = '#0009'; g.shadowBlur = 60; g.shadowOffsetY = 30;
+      const k = g.createRadialGradient(x - r / 3, y - r / 3, r / 10, x, y, r);
+      k.addColorStop(0, '#fff0a0'); k.addColorStop(0.5, '#f6c829'); k.addColorStop(1, '#c98f0a');
+      g.fillStyle = k; g.beginPath(); g.ellipse(x, y, r, r * 0.92, 0.3, 0, 7); g.fill(); g.restore();
+    }
+    return c;
+  }
+
+  const font = (w, size, fam = 'Barlow Condensed') => `${w} ${size}px "${fam}"`;
+  function cover(g, img, x, y, w, h) {
+    const iw = img.naturalWidth ?? img.width, ih = img.naturalHeight ?? img.height;
+    const s = Math.max(w / iw, h / ih);
+    g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip();
+    g.drawImage(img, x + (w - iw * s) / 2, y + (h - ih * s) / 2, iw * s, ih * s); g.restore();
+  }
+
+  // Price lockup: integer, raised decimals, kr, unit. Returns total width; draws right-aligned to xRight.
+  function price(g, { int, dec, unit }, xRight, baseline, size, color, weight = 900) {
+    g.fillStyle = color; g.textBaseline = 'alphabetic';
+    g.font = font(weight, size); const wi = g.measureText(int).width; const cap = g.measureText('0').actualBoundingBoxAscent;
+    const small = Math.round(size * 0.42), tiny = Math.round(size * 0.2);
+    g.font = font(weight, small); const wd = dec ? g.measureText(dec).width : 0;
+    g.font = font(600, tiny); const wk = g.measureText(unit ? `kr${unit}` : 'kr').width;
+    const col = Math.max(wd, wk), gap = size * 0.05;
+    const x0 = xRight - (wi + gap + col);
+    g.font = font(weight, size); g.fillText(int, x0, baseline);
+    const cx = x0 + wi + gap;
+    if (dec) { g.font = font(weight, small); g.fillText(dec, cx, baseline - cap + g.measureText('0').actualBoundingBoxAscent); }
+    g.font = font(600, tiny); g.globalAlpha = 0.85; g.fillText(unit ? `kr${unit}` : 'kr', cx, baseline); g.globalAlpha = 1;
+    return wi + gap + col;
+  }
+
+  function brand(g, x, baseline, size, mono = null) {
+    g.font = font(900, size); let cx = x;
+    for (const [w, c] of [['ALLMAT', RED], ['VÄRMLAND', BLACK], ['AB', GREEN]]) { g.fillStyle = mono ?? c; g.fillText(w, cx, baseline); cx += g.measureText(w).width + size * 0.22; }
+  }
+
+  // A — "Sockel": full-bleed photo, white plinth with logo, colour price block rising from the corner.
+  function A(g, photo, way, d) {
+    const c = WAYS[way];
+    cover(g, photo, 0, 0, S, 830);
+    g.fillStyle = PAPER; g.fillRect(0, 830, S, 250);
+    const bw = 470, bt = 760;
+    g.fillStyle = c.block; g.fillRect(S - bw, bt, bw, S - bt);
+    price(g, d, S - 56, 1010, 230, c.on);
+    const lh = 120, lw = lh * logo.naturalWidth / logo.naturalHeight;
+    g.drawImage(logo, 52, 870, lw, lh);
+    brand(g, 52 + lw + 20, 925, 40);
+    g.fillStyle = INK; g.font = font(500, 34, 'Noto Sans Arabic'); g.fillText(d.name, 52 + lw + 20, 978);
+    g.fillStyle = c.accent; g.fillRect(0, 1068, S - bw, 12);
+  }
+
+  // B — "Galleri": photo matted in white, hairline, typographic price in colour. No block at all.
+  function B(g, photo, way, d) {
+    const c = WAYS[way];
+    g.fillStyle = PAPER; g.fillRect(0, 0, S, S);
+    cover(g, photo, 48, 48, 984, 760);
+    g.fillStyle = '#E3E4DE'; g.fillRect(48, 842, 984, 2);
+    const lh = 104, lw = lh * logo.naturalWidth / logo.naturalHeight;
+    g.drawImage(logo, 48, 896, lw, lh);
+    g.fillStyle = INK; g.font = font(700, 50); g.fillText(d.name, 48 + lw + 28, 948);
+    brand(g, 48 + lw + 28, 996, 28, MUTED);
+    price(g, d, 1032, 1012, 190, c.accent, 700);
+    g.fillStyle = c.accent; g.fillRect(0, 1064, S, 16);
+  }
+
+  // C — "Kort": photo everywhere, one floating white card holding logo, name and a colour price cell.
+  function C(g, photo, way, d) {
+    const c = WAYS[way];
+    cover(g, photo, 0, 0, S, S);
+    const x = 40, y = 800, w = 1000, h = 240, r = 36;
+    g.save(); g.shadowColor = '#0000004D'; g.shadowBlur = 48; g.shadowOffsetY = 16;
+    g.fillStyle = PAPER; g.beginPath(); g.roundRect(x, y, w, h, r); g.fill(); g.restore();
+    const pw = 430;
+    g.fillStyle = c.block; g.beginPath(); g.roundRect(x + w - pw, y, pw, h, [0, r, r, 0]); g.fill();
+    price(g, d, x + w - 44, y + 182, 200, c.on);
+    const lh = 96, lw = lh * logo.naturalWidth / logo.naturalHeight;
+    g.drawImage(logo, x + 36, y + 34, lw, lh);
+    brand(g, x + 36 + lw + 16, y + 96, 34);
+    g.fillStyle = INK; g.font = font(500, 32, 'Noto Sans Arabic'); g.fillText(d.name, x + 40, y + 192);
+  }
+
+  const data = [
+    { int: '24', dec: '95', unit: '/kg', name: 'Citroner' },
+    { int: '9', dec: '95', unit: '/kg', name: 'Bananer' },
+    { int: '129', dec: '95', unit: '', name: 'Basmati ris 5 kg' },
+  ];
+  const variants = [['A · Sockel', A], ['B · Galleri', B], ['C · Kort', C]];
+  const ways = ['rod', 'gron', 'svart'];
+
+  async function draw(photo, save) {
+    const grid = document.getElementById('grid'); grid.replaceChildren();
+    for (const [vi, [label, fn]] of variants.entries()) {
+      for (const [wi, way] of ways.entries()) {
+        const c = document.createElement('canvas'); c.width = S; c.height = S;
+        fn(c.getContext('2d'), photo, way, data[wi]);
+        const f = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = `${label} · ${way}`;
+        f.append(c, cap); grid.append(f);
+        if (save) { const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.9)); await fetch(`./dev/out/${'ABC'[vi]}-${way}.jpg`, { method: 'PUT', body: blob }); }
+      }
+    }
+    document.title = 'done';
+  }
+
+  document.getElementById('file').addEventListener('change', async (e) => {
+    const i = new Image(); i.onload = () => draw(i, true); i.src = URL.createObjectURL(e.target.files[0]);
+  });
+  draw(fakePhoto(), true);
+</script>
+</html>

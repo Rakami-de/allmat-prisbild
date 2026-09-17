@@ -1,6 +1,6 @@
 // Minimal static server for local development. Production is GitHub Pages.
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -16,6 +16,15 @@ createServer(async (req, res) => {
   const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname));
   const file = join(ROOT, path.endsWith('/') ? `${path}index.html` : path);
   if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
+  // Dev only: lets a lab page save a rendered canvas to dev/out/ for review.
+  if (req.method === 'PUT' && path.startsWith('/dev/out/')) {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    await mkdir(join(ROOT, 'dev/out'), { recursive: true });
+    await writeFile(file, Buffer.concat(chunks));
+    res.writeHead(204).end();
+    return;
+  }
   try {
     const body = await readFile(file);
     res.writeHead(200, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' });
