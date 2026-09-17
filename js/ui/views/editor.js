@@ -4,7 +4,7 @@ import { parsePrice, formatPriceParts } from '../../core/price.js';
 import { loadImage, releaseCanvas } from '../../core/photo.js';
 import { loadRenderAssets, renderItem } from '../../core/render.js';
 import { getPhoto } from '../../core/storage.js';
-import { SIZE, GEOMETRY } from '../../core/layout.js';
+import { SIZE, photoSlot } from '../../core/layout.js';
 
 const tidyPrice = (text) => {
   const parsed = parsePrice(text);
@@ -37,7 +37,7 @@ export function renderEditor(app, { id }) {
     frame = requestAnimationFrame(() => {
       if (!alive || !assets) return;
       const item = current();
-      const layout = renderItem(canvas, { item, photo, colorway: state.batch.colorway, assets });
+      const layout = renderItem(canvas, { item, photo, colorway: state.batch.colorway, template: state.batch.template, assets });
       const status = itemStatus(item);
       const problem = status === 'invalid-price' || status === 'invalid-old-price'
         ? t(`status.${status}`)
@@ -66,7 +66,7 @@ export function renderEditor(app, { id }) {
   let pinchStart = null;
 
   function overflow() {
-    const slot = GEOMETRY.photo;
+    const slot = photoSlot(state.batch.template);
     const { zoom } = current().crop;
     const scale = Math.max(slot.w / photo.naturalWidth, slot.h / photo.naturalHeight) * zoom;
     return { x: photo.naturalWidth * scale - slot.w, y: photo.naturalHeight * scale - slot.h };

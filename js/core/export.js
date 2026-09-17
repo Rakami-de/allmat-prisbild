@@ -25,7 +25,7 @@ export async function generateAll(batch, { onProgress = () => {}, signal } = {})
       const blob = await getPhoto(item.photoKey);
       if (!blob) throw { code: 'photo' };
       const photo = await loadImage(blob);
-      renderItem(canvas, { item, photo, colorway: batch.colorway, assets });
+      renderItem(canvas, { item, photo, colorway: batch.colorway, template: batch.template, assets });
       photo.src = '';
       const jpeg = await canvasToBlob(canvas, JPEG_QUALITY);
       files.push(new File([jpeg], fileName(index), { type: 'image/jpeg' }));

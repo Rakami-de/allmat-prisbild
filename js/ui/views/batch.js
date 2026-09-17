@@ -1,9 +1,16 @@
 import { h, icon } from '../dom.js';
-import { COLORWAYS, itemStatus, moveItem, readyItems, setColorway } from '../../core/batch.js';
+import { COLORWAYS, TEMPLATES, itemStatus, moveItem, readyItems, setColorway, setTemplate } from '../../core/batch.js';
 import { parsePrice, formatPriceParts } from '../../core/price.js';
 import { STORE } from '../../config/store.js';
 
 let reordering = false;
+
+// Miniature diagrams of each template: grey = photo, white = plinth/card, colour = price.
+const TEMPLATE_ICON = {
+  sockel: '<rect width="48" height="48" rx="6" fill="#B9BDB2"/><rect y="37" width="48" height="11" fill="#fff"/><rect x="27" y="33" width="21" height="15" fill="var(--swatch)"/>',
+  kort: '<rect width="48" height="48" rx="6" fill="#B9BDB2"/><rect x="3" y="34" width="42" height="11" rx="3" fill="#fff"/><path d="M27 34h15a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H27z" fill="var(--swatch)"/>',
+  signatur: '<rect width="48" height="48" rx="6" fill="#B9BDB2"/><rect y="36" width="48" height="12" fill="var(--swatch)"/><circle cx="24" cy="36" r="6" fill="#fff" stroke="var(--swatch)" stroke-width="1.5"/><rect x="2.5" y="2.5" width="43" height="43" fill="none" stroke="#fff" stroke-width="1"/>',
+};
 
 function priceLabel(item) {
   const parsed = parsePrice(item.fields.price);
@@ -70,6 +77,17 @@ export function renderBatch(app) {
     h('span', { class: 'swatch-chip', style: `--swatch:${STORE.colorways[key].swatch}` }, batch.colorway === key ? icon('check') : null),
     h('span', {}, t(`batch.colorway.${key}`)))));
 
+  const swatch = STORE.colorways[batch.colorway].swatch;
+  const templates = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': t('batch.template') },
+    TEMPLATES.map((key) => h('button', {
+      class: `swatch template ${batch.template === key ? 'is-selected' : ''}`,
+      role: 'radio',
+      'aria-checked': String((batch.template ?? 'sockel') === key),
+      onclick: () => app.updateBatch((b) => setTemplate(b, key)),
+    },
+    h('span', { class: 'template-icon', style: `--swatch:${swatch}`, html: `<svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">${TEMPLATE_ICON[key]}</svg>` }),
+    h('span', {}, t(`batch.template.${key}`)))));
+
   return h('main', { class: 'screen batch' },
     h('header', { class: 'bar' },
       h('button', { class: 'round', 'aria-label': t('common.back'), onclick: () => { reordering = false; app.go('home'); } }, icon('back', 'icon flip-rtl')),
@@ -79,6 +97,10 @@ export function renderBatch(app) {
       total > 1
         ? h('button', { class: 'text-btn', onclick: () => { reordering = !reordering; app.refresh(); } }, t(reordering ? 'editor.done' : 'batch.reorder'))
         : h('span', { class: 'bar-spacer' })),
+
+    h('section', { class: 'section' },
+      h('h2', { class: 'label' }, t('batch.template')),
+      templates),
 
     h('section', { class: 'section' },
       h('h2', { class: 'label' }, t('batch.colorway')),

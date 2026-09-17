@@ -1,6 +1,8 @@
 import { parsePrice, parseMultiBuy } from './price.js';
+import { TEMPLATES } from './layout.js';
 
 export const COLORWAYS = ['rod', 'gron', 'svart'];
+export { TEMPLATES };
 export const UNITS = ['', '/kg', '/st', '/förp', '/liter', '/100g'];
 export const MODES = ['standard', 'nyhet', 'kampanj'];
 
@@ -12,7 +14,7 @@ const ALLOWED = { unit: UNITS, mode: MODES };
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
 export function createBatch() {
-  return { colorway: 'rod', items: [] };
+  return { template: 'sockel', colorway: 'rod', items: [] };
 }
 
 export function addItem(batch, { id, photoKey }) {
@@ -56,6 +58,10 @@ export function updateCrop(batch, id, patch) {
 
 export function setColorway(batch, colorway) {
   return COLORWAYS.includes(colorway) ? { ...batch, colorway } : batch;
+}
+
+export function setTemplate(batch, template) {
+  return TEMPLATES.includes(template) ? { ...batch, template } : batch;
 }
 
 export function itemStatus(item) {

@@ -197,6 +197,10 @@ a.round { color: inherit; text-decoration: none; }
 .swatch-chip { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-pill); background: var(--swatch); color: #fff; flex: none; border: 1px solid #ffffff33; }
 .swatch-chip svg { width: 16px; height: 16px; stroke-width: 3; }
 
+.template { flex-direction: column; align-items: center; gap: var(--space-1); padding-block: var(--space-3); font-size: var(--type-caption); }
+.template-icon svg { display: block; border-radius: 6px; }
+.batch { gap: var(--space-5); }
+
 .thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
 .thumb { position: relative; min-width: 0; }
 .thumb-open { display: flex; flex-direction: column; gap: var(--space-1); width: 100%; text-align: start; }

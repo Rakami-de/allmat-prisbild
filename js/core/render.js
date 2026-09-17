@@ -19,7 +19,7 @@ export function loadRenderAssets() {
       new FontFace(family, `url(${new URL(url, document.baseURI)})`, { weight, display: 'block' }));
     await Promise.all(faces.map(async (face) => { document.fonts.add(await face.load()); }));
     const logo = await loadUrl(STORE.logoMark);
-    return { logo, patterns: await loadPatterns() };
+    return { logo };
   })().catch((error) => { assetsPromise = null; throw { code: 'font', cause: error }; });
   return assetsPromise;
 }
@@ -31,14 +31,6 @@ function loadUrl(url) {
     img.onerror = reject;
     img.src = url;
   });
-}
-
-// Optional decorative artwork per colourway. The app is complete without it.
-async function loadPatterns() {
-  const entries = await Promise.all(Object.entries(STORE.patterns).map(async ([key, url]) => {
-    try { return [key, await loadUrl(url)]; } catch { return [key, null]; }
-  }));
-  return Object.fromEntries(entries);
 }
 
 const cssFont = ({ family, weight, size }) => `${weight} ${size}px "${family}"`;
@@ -64,9 +56,10 @@ function drawText(ctx, part, color) {
 
 function drawPhoto(ctx, slot, photo, crop) {
   ctx.save();
-  roundRect(ctx, slot);
+  ctx.beginPath();
+  ctx.rect(slot.x, slot.y, slot.w, slot.h);
   ctx.clip();
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = '#E9E9E4';
   ctx.fillRect(slot.x, slot.y, slot.w, slot.h);
   if (photo) {
     const pw = photo.naturalWidth ?? photo.width;
@@ -80,32 +73,54 @@ function drawPhoto(ctx, slot, photo, crop) {
   ctx.restore();
 }
 
-function drawPill(ctx, pill, fill, ink, stroke) {
+function drawShape(ctx, shape, colors) {
+  const color = colors[shape.fill];
+  ctx.save();
+  if (shape.shadow) {
+    ctx.shadowColor = STORE.shadow;
+    ctx.shadowBlur = 48;
+    ctx.shadowOffsetY = 16;
+  }
+  ctx.beginPath();
+  if (shape.type === 'circle') ctx.arc(shape.cx, shape.cy, shape.r, 0, Math.PI * 2);
+  else if (shape.type === 'roundRect') ctx.roundRect(shape.x, shape.y, shape.w, shape.h, shape.r);
+  else ctx.rect(shape.x, shape.y, shape.w, shape.h);
+  if (shape.type === 'strokeRect') {
+    ctx.lineWidth = shape.line;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawPill(ctx, pill, fill, ink) {
+  ctx.save();
+  ctx.shadowColor = '#0000002E';
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 4;
   roundRect(ctx, pill);
   ctx.fillStyle = fill;
   ctx.fill();
-  if (stroke) {
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = stroke;
-    roundRect(ctx, { x: pill.x + 1, y: pill.y + 1, w: pill.w - 2, h: pill.h - 2, r: pill.r - 1 });
-    ctx.stroke();
-  }
+  ctx.restore();
   drawText(ctx, { text: pill.text, font: pill.font, x: pill.textX, baseline: pill.baseline }, ink);
 }
 
-export function layoutForItem(ctx, item, colorway) {
+export function layoutForItem(ctx, item, template) {
   const price = parsePrice(item.fields.price);
   const old = parsePrice(item.fields.oldPrice);
   return computeLayout({
     fields: item.fields,
     priceParts: price.ok ? formatPriceParts(price.ore) : { int: '–', dec: null },
     oldPriceParts: old.ok ? formatPriceParts(old.ore) : null,
-    colorway,
+    template,
     measure: makeMeasure(ctx),
   });
 }
 
-export function renderItem(canvas, { item, photo, colorway, assets }) {
+export function renderItem(canvas, { item, photo, colorway, template, assets }) {
   canvas.width = SIZE;
   canvas.height = SIZE;
   const ctx = canvas.getContext('2d');
@@ -113,77 +128,49 @@ export function renderItem(canvas, { item, photo, colorway, assets }) {
   ctx.direction = 'ltr';
   ctx.imageSmoothingQuality = 'high';
 
-  const colors = STORE.colorways[colorway];
-  const layout = layoutForItem(ctx, item, colorway);
+  const colors = STORE.colorways[colorway] ?? STORE.colorways.rod;
+  const layout = layoutForItem(ctx, item, template);
 
-  // Frame: a solid field with the paper inset, so side widths can differ (Grön).
-  ctx.fillStyle = colors.frame;
-  ctx.fillRect(0, 0, SIZE, SIZE);
   ctx.fillStyle = colors.paper;
-  ctx.fillRect(layout.frame.side, layout.frame.top, SIZE - layout.frame.side * 2, SIZE - layout.frame.top * 2);
-
-  // Ornament: multiplied onto the paper at low strength, so a white background in the artwork vanishes.
-  const pattern = assets.patterns?.[colorway];
-  if (pattern) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(layout.frame.side, layout.frame.top, SIZE - layout.frame.side * 2, SIZE - layout.frame.top * 2);
-    ctx.clip();
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.globalAlpha = STORE.patternStrength;
-    ctx.drawImage(pattern, 0, 0, SIZE, SIZE);
-    ctx.restore();
-  }
-
+  ctx.fillRect(0, 0, SIZE, SIZE);
   drawPhoto(ctx, layout.photo, photo, item.crop);
+  for (const shape of layout.shapes) drawShape(ctx, shape, colors);
 
-  const box = layout.logoBox;
+  const box = layout.logo;
   const logoScale = Math.min(box.w / assets.logo.naturalWidth, box.h / assets.logo.naturalHeight);
   const lw = assets.logo.naturalWidth * logoScale;
   const lh = assets.logo.naturalHeight * logoScale;
-  ctx.drawImage(assets.logo, box.x, box.y + (box.h - lh) / 2, lw, lh);
+  ctx.drawImage(assets.logo, box.x + (box.w - lw) / 2, box.y + (box.h - lh) / 2, lw, lh);
 
   // The shop name is set in type rather than taken from the logo bitmap, so it stays sharp.
-  ctx.font = cssFont({ family: FONT.price, weight: 900, size: layout.brand.size });
-  let brandX = layout.brand.x;
-  for (const [word, color] of STORE.brandWords) {
-    ctx.fillStyle = color;
-    ctx.fillText(word, brandX, layout.brand.baseline);
-    brandX += ctx.measureText(word).width + layout.brand.gap;
+  if (layout.brand) {
+    ctx.font = cssFont({ family: FONT.price, weight: 900, size: layout.brand.size });
+    let brandX = layout.brand.x;
+    for (const [word, color] of STORE.brandWords) {
+      ctx.fillStyle = color;
+      ctx.fillText(word, brandX, layout.brand.baseline);
+      brandX += ctx.measureText(word).width + layout.brand.size * 0.22;
+    }
   }
 
-  if (layout.tag) drawPill(ctx, layout.tag, colors.tag, colors.tagInk, null);
-  if (layout.weight) drawPill(ctx, layout.weight, colors.weight, colors.weightInk, colors.weightStroke);
-
-  // Badge: shadow, fill, inside stroke.
-  const badge = layout.badge;
-  ctx.save();
-  ctx.shadowColor = STORE.shadow;
-  ctx.shadowBlur = 24;
-  ctx.shadowOffsetY = 8;
-  roundRect(ctx, badge);
-  ctx.fillStyle = colors.badge;
-  ctx.fill();
-  ctx.restore();
-  const inset = badge.stroke / 2;
-  roundRect(ctx, { x: badge.x + inset, y: badge.y + inset, w: badge.w - badge.stroke, h: badge.h - badge.stroke, r: badge.r - inset });
-  ctx.lineWidth = badge.stroke;
-  ctx.strokeStyle = colors.badgeStroke;
-  ctx.stroke();
+  if (layout.tag) drawPill(ctx, layout.tag, colors.block, colors.on);
+  if (layout.weight) drawPill(ctx, layout.weight, colors.paper, colors.ink);
 
   const { price } = layout;
-  for (const key of ['multi', 'int', 'dec', 'kr', 'unit']) {
-    if (price[key]) drawText(ctx, price[key], colors.price);
+  const priceColor = colors[price.color];
+  for (const key of ['multi', 'int', 'dec', 'kr']) {
+    if (price[key]) drawText(ctx, price[key], priceColor);
   }
   if (price.old) {
-    drawText(ctx, price.old, colors.price);
-    ctx.fillStyle = colors.price;
+    ctx.globalAlpha = 0.85;
+    drawText(ctx, price.old, priceColor);
     const s = price.old.strike;
     ctx.fillRect(s.x1, s.y - s.width / 2, s.x2 - s.x1, s.width);
+    ctx.globalAlpha = 1;
   }
 
-  if (layout.name) for (const line of layout.name.lines) drawText(ctx, { ...line, font: layout.name.font }, colors.ink);
-  if (layout.note) for (const line of layout.note.lines) drawText(ctx, { ...line, font: layout.note.font }, colors.muted);
+  if (layout.name) drawText(ctx, layout.name, colors[layout.name.color]);
+  if (layout.note) drawText(ctx, layout.note, colors[layout.note.color]);
 
   return layout;
 }

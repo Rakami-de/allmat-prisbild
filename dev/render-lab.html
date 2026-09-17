@@ -18,28 +18,28 @@
 
   const blank = { price: '', unit: '', weight: '', name: '', note: '', mode: 'standard', oldPrice: '', multiQty: '' };
   const samples = [
-    ['rod', { price: '9,95', unit: '/kg' }],
-    ['gron', { price: '24,95', unit: '/kg', name: 'Kvisttomater', note: 'Färska idag' }],
-    ['svart', { price: '99,95', weight: '5 kg', name: 'Mahmood Sella Basmati Ris' }],
-    ['rod', { price: '29,95', mode: 'kampanj', oldPrice: '39,95', unit: '/st', name: 'Kapya röd paprika' }],
-    ['gron', { price: '30', multiQty: '2', mode: 'nyhet', name: 'Citroner' }],
-    ['svart', { price: '1299,95', mode: 'kampanj', oldPrice: '1499', name: 'Olivolja Extra Virgin 5 liter dunk' , weight: '5 L'}],
-    ['rod', { price: '5' }],
-    ['gron', { price: '129,95', unit: '/100g', weight: '500 g' }],
-    ['svart', { price: '11,95', unit: '/kg', mode: 'nyhet' }],
+    ['sockel', 'rod', { price: '24,95', unit: '/kg', name: 'Citroner' }],
+    ['kort', 'svart', { price: '129,95', name: 'Basmati ris', weight: '5 kg' }],
+    ['signatur', 'gron', { price: '9,95', unit: '/kg', name: 'Bananer', note: 'Färska idag' }],
+    ['signatur', 'svart', { price: '29,95', mode: 'kampanj', oldPrice: '39,95', unit: '/st', name: 'Kapya röd paprika' }],
+    ['signatur', 'rod', { price: '1299,95', name: 'Olivolja Extra Virgin', weight: '5 L', mode: 'nyhet' }],
+    ['sockel', 'gron', { price: '30', multiQty: '2', mode: 'nyhet', name: 'Kvisttomater', note: 'Klass 1' }],
+    ['kort', 'rod', { price: '29,95', mode: 'kampanj', oldPrice: '39,95', unit: '/kg', name: 'Kapya röd paprika' }],
+    ['sockel', 'svart', { price: '1299,95', mode: 'kampanj', oldPrice: '1499', name: 'Olivolja Extra Virgin 5 liter dunk' }],
+    ['kort', 'gron', { price: '5', unit: '/st' }],
   ];
 
   // Stand-in "produce" photo until a real one is picked.
   function fakePhoto() {
-    const c = document.createElement('canvas');
-    c.width = 1500; c.height = 2000;
+    const c = document.createElement('canvas'); c.width = 1600; c.height = 1600;
     const g = c.getContext('2d');
-    g.fillStyle = '#c98a1a'; g.fillRect(0, 0, c.width, c.height);
-    for (let i = 0; i < 60; i += 1) {
-      const x = (i * 397) % c.width, y = (i * 613) % c.height, r = 190 + (i * 37) % 60;
-      const grad = g.createRadialGradient(x - r / 3, y - r / 3, r / 8, x, y, r);
-      grad.addColorStop(0, '#ffe36b'); grad.addColorStop(1, '#e09a12');
-      g.fillStyle = grad; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+    const bg = g.createLinearGradient(0, 0, 1600, 1600); bg.addColorStop(0, '#3a4a3f'); bg.addColorStop(1, '#1f2a24');
+    g.fillStyle = bg; g.fillRect(0, 0, 1600, 1600);
+    for (const [x, y, r] of [[420, 520, 300], [980, 430, 270], [1250, 900, 290], [640, 1050, 320], [1080, 1330, 250], [250, 1240, 260], [200, 200, 220], [1400, 250, 200]]) {
+      g.save(); g.shadowColor = '#0009'; g.shadowBlur = 60; g.shadowOffsetY = 30;
+      const k = g.createRadialGradient(x - r / 3, y - r / 3, r / 10, x, y, r);
+      k.addColorStop(0, '#fff0a0'); k.addColorStop(0.5, '#f6c829'); k.addColorStop(1, '#c98f0a');
+      g.fillStyle = k; g.beginPath(); g.ellipse(x, y, r, r * 0.92, 0.3, 0, 7); g.fill(); g.restore();
     }
     return c;
   }
@@ -48,15 +48,18 @@
     const assets = await loadRenderAssets();
     const grid = document.getElementById('grid');
     grid.replaceChildren();
-    for (const [colorway, fields] of samples) {
+    for (const [i, [template, colorway, fields]] of samples.entries()) {
       const figure = document.createElement('figure');
       const canvas = document.createElement('canvas');
-      const layout = renderItem(canvas, { item: { fields: { ...blank, ...fields }, crop: { x: 0.5, y: 0.5, zoom: 1 } }, photo, colorway, assets });
+      const layout = renderItem(canvas, { item: { fields: { ...blank, ...fields }, crop: { x: 0.5, y: 0.5, zoom: 1 } }, photo, colorway, template, assets });
+      const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', 0.9));
+      await fetch(`./dev/out/lab-${i + 1}-${template}-${colorway}.jpg`, { method: 'PUT', body: blob });
       const caption = document.createElement('figcaption');
-      caption.textContent = `${colorway} · int ${layout.price.intSize}px · ${layout.warnings.join(', ') || 'ok'}`;
+      caption.textContent = `${template} · ${colorway} · int ${layout.price.intSize}px · ${layout.warnings.join(', ') || 'ok'}`;
       figure.append(canvas, caption);
       grid.append(figure);
     }
+    document.title = 'done';
   }
 
   document.getElementById('file').addEventListener('change', async (e) => draw(await loadImage(e.target.files[0])));

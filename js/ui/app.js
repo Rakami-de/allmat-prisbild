@@ -261,7 +261,7 @@ async function boot() {
   try {
     await storage.openStore();   // keeps the handle warm so later saves start synchronously
     const saved = await storage.loadBatch();
-    if (saved?.items?.length) state.batch = saved;
+    if (saved?.items?.length) state.batch = { ...createBatch(), ...saved };
   } catch { /* storage unavailable: start empty */ }
   state.params = { resume: state.batch.items.length > 0 };
   paint('none');

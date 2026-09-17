@@ -13,22 +13,11 @@ export const STORE = {
   filePrefix: 'allmat',
   logoFull: './assets/brand/logo-full.png',
   logoMark: './assets/brand/logo-mark.png',
-  shadow: '#0E0E0E40',
-  // Optional ornament per colourway, e.g. { rod: './assets/frames/pattern-rod.png' }. Add to sw.js SHELL too.
-  patterns: {},
-  patternStrength: 0.14,
+  shadow: '#00000052',
+  // Colour roles used by the templates in core/layout.js.
   colorways: {
-    rod: {
-      swatch: RED, paper: WHITE, frame: RED, badge: RED, badgeStroke: WHITE, price: WHITE,
-      ink: BLACK, muted: MUTED, tag: GREEN, tagInk: WHITE, weight: WHITE, weightInk: BLACK, weightStroke: RED,
-    },
-    gron: {
-      swatch: GREEN, paper: WHITE, frame: GREEN, badge: WHITE, badgeStroke: GREEN, price: RED,
-      ink: GREEN, muted: MUTED, tag: GREEN, tagInk: WHITE, weight: GREEN, weightInk: WHITE, weightStroke: WHITE,
-    },
-    svart: {
-      swatch: BLACK, paper: WHITE, frame: BLACK, badge: BLACK, badgeStroke: WHITE, price: WHITE,
-      ink: BLACK, muted: MUTED, tag: BLACK, tagInk: WHITE, weight: BLACK, weightInk: WHITE, weightStroke: WHITE,
-    },
+    rod: { swatch: RED, block: RED, accent: RED, on: WHITE, onMuted: '#FFFFFFCC', paper: WHITE, ink: BLACK, muted: MUTED },
+    gron: { swatch: GREEN, block: GREEN, accent: GREEN, on: WHITE, onMuted: '#FFFFFFCC', paper: WHITE, ink: BLACK, muted: MUTED },
+    svart: { swatch: BLACK, block: BLACK, accent: BLACK, on: WHITE, onMuted: '#FFFFFFB3', paper: WHITE, ink: BLACK, muted: MUTED },
   },
 };

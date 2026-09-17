@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createBatch, addItem, removeItem, moveItem, updateFields, updateCrop,
-  setColorway, itemStatus, readyItems, UNITS, COLORWAYS,
+  setColorway, setTemplate, itemStatus, readyItems, UNITS, COLORWAYS,
 } from '../js/core/batch.js';
 
 const three = () => ['a', 'b', 'c'].reduce(
@@ -10,7 +10,7 @@ const three = () => ['a', 'b', 'c'].reduce(
 const ids = (b) => b.items.map((i) => i.id);
 
 test('new batch is empty and red', () => {
-  assert.deepEqual(createBatch(), { colorway: 'rod', items: [] });
+  assert.deepEqual(createBatch(), { template: 'sockel', colorway: 'rod', items: [] });
   assert.deepEqual(COLORWAYS, ['rod', 'gron', 'svart']);
   assert.equal(UNITS[0], '');
 });
@@ -58,6 +58,12 @@ test('updateCrop clamps', () => {
 test('setColorway accepts only known colorways', () => {
   assert.equal(setColorway(createBatch(), 'svart').colorway, 'svart');
   assert.equal(setColorway(createBatch(), 'rosa').colorway, 'rod');
+});
+
+test('setTemplate accepts only known templates', () => {
+  assert.equal(setTemplate(createBatch(), 'kort').template, 'kort');
+  assert.equal(setTemplate(createBatch(), 'signatur').template, 'signatur');
+  assert.equal(setTemplate(createBatch(), 'retro').template, 'sockel');
 });
 
 test('itemStatus', () => {
