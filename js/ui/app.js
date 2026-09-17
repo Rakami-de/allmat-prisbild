@@ -80,11 +80,10 @@ export const app = {
   pickCamera: () => cameraInput.click(),
   pickLibrary: () => libraryInput.click(),
 
-  async thumbUrl(photoKey) {
+  // Caches the pending read, so repaints never create a second object URL for the same photo.
+  thumbUrl(photoKey) {
     if (!thumbUrls.has(photoKey)) {
-      const blob = await storage.getPhoto(`${photoKey}:t`);
-      if (!blob) return null;
-      thumbUrls.set(photoKey, URL.createObjectURL(blob));
+      thumbUrls.set(photoKey, storage.getPhoto(`${photoKey}:t`).then((blob) => (blob ? URL.createObjectURL(blob) : null)));
     }
     return thumbUrls.get(photoKey);
   },
@@ -169,16 +168,15 @@ function paint(direction) {
 }
 
 function releaseThumb(photoKey) {
-  const url = thumbUrls.get(photoKey);
-  if (url) URL.revokeObjectURL(url);
+  const pending = thumbUrls.get(photoKey);
   thumbUrls.delete(photoKey);
+  pending?.then((url) => { if (url) URL.revokeObjectURL(url); });
 }
 
 // ---------- photo intake ----------
 
-async function addFiles(fileList) {
-  const files = [...fileList].filter((file) => file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name));
-  if (files.length === 0) return;
+async function addFiles(files) {
+  const startedOn = state.view;
   let dismiss = null;
   let failed = 0;
   for (const [index, file] of files.entries()) {
@@ -187,9 +185,9 @@ async function addFiles(fileList) {
     try {
       const { blob, thumb } = await decodePhoto(file);
       const id = crypto.randomUUID();
-      await storage.putPhoto(id, blob);
-      await storage.putPhoto(`${id}:t`, thumb);
-      app.updateBatch((batch) => addItem(batch, { id, photoKey: id }), { repaint: false });
+      await storage.addPhoto(id, blob, thumb, addItem(state.batch, { id, photoKey: id }));
+      // Re-apply on the live state: the user may have edited something while the write ran.
+      app.updateBatch((batch) => addItem(batch, { id, photoKey: id }), { repaint: state.view === 'batch' });
     } catch (error) {
       if (error?.code === 'quota') { dismiss?.(); app.fail(error); break; }
       failed += 1;
@@ -197,16 +195,18 @@ async function addFiles(fileList) {
   }
   dismiss?.();
   if (failed > 0) app.toast(app.t('error.photo'));
-  if (state.batch.items.length > 0) {
-    if (state.view === 'batch') app.refresh(); else app.go('batch');
-  }
+  // Only leave Home automatically; never pull the user out of an editor or an export.
+  if (startedOn === 'home' && state.view === 'home' && state.batch.items.length > 0) app.go('batch');
 }
 
+// One intake at a time: a second pick waits for the first instead of racing it.
+let intake = Promise.resolve();
+
 for (const input of [cameraInput, libraryInput]) {
-  input.addEventListener('change', async () => {
-    const files = input.files;
-    await addFiles(files);
+  input.addEventListener('change', () => {
+    const files = [...input.files].filter((file) => file.type.startsWith('image/') || /\.(heic|heif)$/i.test(file.name));
     input.value = '';
+    if (files.length > 0) intake = intake.then(() => addFiles(files)).catch((error) => app.fail(error));
   });
 }
 
@@ -237,11 +237,29 @@ function watchForUpdates() {
   });
 }
 
+// ---------- keyboard ----------
+// The view is a fixed scroll container, so it has to shrink with the on-screen keyboard
+// or lower fields end up underneath it.
+
+function trackKeyboard() {
+  const viewport = window.visualViewport;
+  if (!viewport) return;
+  const apply = () => document.documentElement.style.setProperty('--viewport-height', `${viewport.height}px`);
+  viewport.addEventListener('resize', apply);
+  apply();
+  document.addEventListener('focusin', (event) => {
+    if (!event.target.matches?.('input')) return;
+    setTimeout(() => event.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 320);
+  });
+}
+
 // ---------- boot ----------
 
 async function boot() {
   applyLang();
+  trackKeyboard();
   try {
+    await storage.openStore();   // keeps the handle warm so later saves start synchronously
     const saved = await storage.loadBatch();
     if (saved?.items?.length) state.batch = saved;
   } catch { /* storage unavailable: start empty */ }

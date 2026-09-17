@@ -18,20 +18,25 @@ export function loadRenderAssets() {
     const faces = FONT_FILES.map(([family, weight, url]) =>
       new FontFace(family, `url(${new URL(url, document.baseURI)})`, { weight, display: 'block' }));
     await Promise.all(faces.map(async (face) => { document.fonts.add(await face.load()); }));
-    const logo = new Image();
-    logo.src = STORE.logoMark;
-    await logo.decode();
+    const logo = await loadUrl(STORE.logoMark);
     return { logo, patterns: await loadPatterns() };
   })().catch((error) => { assetsPromise = null; throw { code: 'font', cause: error }; });
   return assetsPromise;
 }
 
+function loadUrl(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 // Optional decorative artwork per colourway. The app is complete without it.
 async function loadPatterns() {
   const entries = await Promise.all(Object.entries(STORE.patterns).map(async ([key, url]) => {
-    const img = new Image();
-    img.src = url;
-    try { await img.decode(); return [key, img]; } catch { return [key, null]; }
+    try { return [key, await loadUrl(url)]; } catch { return [key, null]; }
   }));
   return Object.fromEntries(entries);
 }

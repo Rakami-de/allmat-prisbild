@@ -66,6 +66,7 @@ export default {
   'output.saveHint': 'اختر ”Spara {n} bilder“ من القائمة التي ستفتح.',
   'output.share': 'مشاركة',
   'output.oneByOne': 'شارك صورة صورة',
+  'output.oneByOneHint': 'شارك الصور واحدة واحدة من الزر على كل صورة.',
   'output.download': 'تحميل',
   'output.newBatch': 'دفعة جديدة',
   'output.newBatchConfirm': 'هل حفظت الصور؟ سيتم حذف الدفعة.',

@@ -36,7 +36,8 @@ export function renderOutput(app) {
 
   function showResults(files) {
     if (controller.signal.aborted) return;
-    const canShare = canShareFiles(files);
+    // A 15-file payload can be refused while single files are fine, so check each case on its own.
+    const canShareAll = canShareFiles(files);
     const n = files.length;
 
     const share = async (list) => {
@@ -48,18 +49,19 @@ export function renderOutput(app) {
       urls.push(url);
       return h('li', { class: 'result' },
         h('img', { src: url, alt: file.name, loading: 'lazy', decoding: 'async', width: 1080, height: 1080 }),
-        canShare
+        canShareFiles([file])
           ? h('button', { class: 'round result-share', 'aria-label': t('output.share'), onclick: () => share([file]) }, icon('share'))
           : h('a', { class: 'round result-share', href: url, download: file.name, 'aria-label': t('output.download') }, icon('save')));
     }));
 
-    const actions = canShare
+    const canShareOne = files.length > 0 && canShareFiles([files[0]]);
+    const actions = canShareAll
       ? [
         h('button', { class: 'btn btn-primary btn-large', onclick: () => share(files) }, icon('save'), t('output.save')),
         h('p', { class: 'hint' }, t('output.saveHint', { n })),
         h('button', { class: 'btn btn-secondary btn-large', onclick: () => share(files) }, icon('share'), t('output.share')),
       ]
-      : [h('p', { class: 'hint' }, t('error.share'))];
+      : [h('p', { class: 'hint' }, t(canShareOne ? 'output.oneByOneHint' : 'error.share'))];
 
     el.replaceChildren(
       h('header', { class: 'bar' },

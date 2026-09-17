@@ -29,8 +29,8 @@ function thumbCard(app, item, index, total) {
         h('span', { class: 'thumb-label', dir: ready ? 'ltr' : null }, ready ? priceLabel(item) : t(`status.${status}`)))),
     reordering
       ? h('div', { class: 'thumb-move' },
-        h('button', { class: 'round', disabled: index === 0, 'aria-label': t('batch.moveEarlier'), onclick: () => app.updateBatch((b) => moveItem(b, item.id, index - 1)) }, icon('back')),
-        h('button', { class: 'round', disabled: index === total - 1, 'aria-label': t('batch.moveLater'), onclick: () => app.updateBatch((b) => moveItem(b, item.id, index + 1)) }, icon('forward')))
+        h('button', { class: 'round', disabled: index === 0, 'aria-label': t('batch.moveEarlier'), onclick: () => app.updateBatch((b) => moveItem(b, item.id, index - 1)) }, icon('back', 'icon flip-rtl')),
+        h('button', { class: 'round', disabled: index === total - 1, 'aria-label': t('batch.moveLater'), onclick: () => app.updateBatch((b) => moveItem(b, item.id, index + 1)) }, icon('forward', 'icon flip-rtl')))
       : h('button', { class: 'round thumb-remove', 'aria-label': t('batch.remove'), onclick: () => app.removePhoto(item.id) }, icon('close')));
 }
 

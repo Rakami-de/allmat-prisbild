@@ -66,6 +66,7 @@ export default {
   'output.saveHint': 'Välj ”Spara {n} bilder” i menyn som öppnas.',
   'output.share': 'Dela',
   'output.oneByOne': 'Dela en i taget',
+  'output.oneByOneHint': 'Dela bilderna en i taget med knappen på varje bild.',
   'output.download': 'Ladda ner',
   'output.newBatch': 'Ny omgång',
   'output.newBatchConfirm': 'Har du sparat bilderna? Omgången raderas.',
