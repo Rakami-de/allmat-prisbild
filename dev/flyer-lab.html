@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="sv">
+<meta charset="utf-8">
+<title>Flyer study</title>
+<base href="../">
+<style>
+  body { margin: 16px; background: #cfcfc9; font: 14px system-ui; }
+  #grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-items: start; max-width: 1200px; }
+  canvas { width: 100%; height: auto; display: block; box-shadow: 0 4px 16px #0003; }
+  figure { margin: 0; } figcaption { padding: 6px 0; font-weight: 600; }
+</style>
+<div id="grid"></div>
+<script type="module">
+  // Design study only — a "Reklamblad" (flyer) template. Structure inspired by supermarket
+  // leaflets; colours, tags and type are Allmat's own. Products are stand-in cut-outs.
+  const RED = '#D10101', GREEN = '#1A6309', BLACK = '#0E0E0E', YELLOW = '#FFD21F', WHITE = '#FFFFFF', CREAM = '#FFF6DA';
+  const W = 1080, H = 1350;
+
+  await Promise.all([600, 700, 900].map((w) => new FontFace('Barlow Condensed', `url(./assets/fonts/barlow-condensed-${w}-latin.woff2)`, { weight: String(w) }).load().then((f) => document.fonts.add(f))));
+  await new FontFace('Noto Sans Arabic', 'url(./assets/fonts/noto-sans-arabic-var-latin.woff2)', { weight: '400 900' }).load().then((f) => document.fonts.add(f));
+  const logo = await new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.src = './assets/brand/logo-mark.png'; });
+  const font = (w, size, fam = 'Barlow Condensed') => `${w} ${size}px "${fam}"`;
+
+  // ---------- stand-in cut-out products (transparent background) ----------
+  function cutout(kind, hue) {
+    const c = document.createElement('canvas'); c.width = 600; c.height = 600;
+    const g = c.getContext('2d');
+    const body = (x, y, w, h, r, a, b) => { const k = g.createLinearGradient(x, 0, x + w, 0); k.addColorStop(0, a); k.addColorStop(0.5, b); k.addColorStop(1, a); g.fillStyle = k; g.beginPath(); g.roundRect(x, y, w, h, r); g.fill(); };
+    if (kind === 'fruit') {
+      for (const [x, y, r] of [[230, 330, 150], [390, 300, 135], [310, 420, 140], [330, 220, 120]]) {
+        const k = g.createRadialGradient(x - r / 3, y - r / 3, r / 10, x, y, r);
+        k.addColorStop(0, `hsl(${hue} 95% 78%)`); k.addColorStop(0.55, `hsl(${hue} 88% 50%)`); k.addColorStop(1, `hsl(${hue} 80% 30%)`);
+        g.fillStyle = k; g.beginPath(); g.ellipse(x, y, r, r * 0.93, 0.3, 0, 7); g.fill();
+      }
+    } else if (kind === 'bottle') {
+      body(255, 40, 90, 120, 18, `hsl(${hue} 50% 18%)`, `hsl(${hue} 55% 32%)`);
+      body(190, 140, 220, 430, 60, `hsl(${hue} 55% 20%)`, `hsl(${hue} 60% 38%)`);
+      body(190, 290, 220, 190, 0, '#efe6cf', '#fffaf0');
+      g.fillStyle = `hsl(${hue} 60% 28%)`; g.fillRect(190, 300, 220, 22); g.fillRect(190, 448, 220, 22);
+      g.fillStyle = `hsl(${hue} 60% 28%)`; g.beginPath(); g.ellipse(300, 385, 58, 40, 0, 0, 7); g.fill();
+    } else if (kind === 'bag') {
+      body(130, 70, 340, 480, 26, `hsl(${hue} 70% 34%)`, `hsl(${hue} 78% 50%)`);
+      body(130, 70, 340, 70, 26, `hsl(${hue} 70% 24%)`, `hsl(${hue} 70% 36%)`);
+      body(170, 210, 260, 200, 18, '#f3ead2', '#fffdf4');
+      g.fillStyle = `hsl(${hue} 75% 36%)`; g.fillRect(190, 235, 220, 26); g.fillRect(190, 360, 150, 18);
+      g.fillStyle = '#c9a227'; g.beginPath(); g.arc(300, 312, 34, 0, 7); g.fill();
+    } else {
+      body(120, 190, 360, 300, 22, `hsl(${hue} 65% 36%)`, `hsl(${hue} 75% 52%)`);
+      body(120, 190, 360, 64, 22, `hsl(${hue} 65% 26%)`, `hsl(${hue} 65% 38%)`);
+      body(160, 290, 280, 150, 14, '#f3ead2', '#fffdf4');
+      g.fillStyle = `hsl(${hue} 70% 36%)`; g.fillRect(180, 312, 240, 24); g.fillRect(180, 390, 160, 16);
+    }
+    return c;
+  }
+
+  function drawCutout(g, img, x, y, w, h, tilt = 0) {
+    g.save(); g.translate(x + w / 2, y + h / 2); g.rotate(tilt);
+    g.shadowColor = '#00000059'; g.shadowBlur = 40; g.shadowOffsetY = 22;
+    g.drawImage(img, -w / 2, -h / 2, w, h); g.restore();
+  }
+
+  // ---------- price tag: discount slab over a price slab ----------
+  function tag(g, x, y, scale, { price, dec, unit = '', old = null, percent = null, colors }) {
+    g.save(); g.translate(x, y); g.scale(scale, scale);
+    g.font = font(900, 120); const wi = g.measureText(price).width;
+    g.font = font(900, 54); const wd = dec ? g.measureText(dec).width : 0;
+    g.font = font(700, 26); const wk = g.measureText(`kr${unit}`).width;
+    const w = Math.max(210, wi + Math.max(wd, wk) + 54), h = 150;
+
+    if (percent) {
+      g.save(); g.translate(8, -46); g.rotate(-0.05);
+      g.fillStyle = colors.slab; g.beginPath(); g.roundRect(0, 0, 150, 62, 8); g.fill();
+      g.fillStyle = colors.slabInk; g.font = font(900, 52); g.fillText(`-${percent}%`, 16, 49); g.restore();
+    }
+    g.shadowColor = '#00000040'; g.shadowBlur = 18; g.shadowOffsetY = 8;
+    g.fillStyle = colors.box; g.beginPath(); g.roundRect(0, 0, w, h, 12); g.fill();
+    g.shadowColor = 'transparent';
+    g.fillStyle = colors.ink;
+    if (old) {
+      g.font = font(600, 28); g.globalAlpha = 0.8; g.fillText(old, 22, 36);
+      g.fillRect(20, 26, g.measureText(old).width + 4, 3); g.globalAlpha = 1;
+    }
+    g.font = font(900, 120); g.fillText(price, 20, 136);
+    const cx = 20 + wi + 8;
+    if (dec) { g.font = font(900, 54); g.fillText(dec, cx, 90); }
+    g.font = font(700, 26); g.fillText(`kr${unit}`, cx, 134);
+    g.restore();
+  }
+
+  function burst(g, cx, cy, r, lines, fill, ink) {
+    g.save(); g.translate(cx, cy); g.rotate(-0.15);
+    g.shadowColor = '#00000040'; g.shadowBlur = 14; g.shadowOffsetY = 6;
+    g.fillStyle = fill; g.beginPath();
+    for (let i = 0; i < 28; i += 1) { const a = (i / 28) * Math.PI * 2, rr = i % 2 ? r * 0.84 : r; g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    g.closePath(); g.fill(); g.shadowColor = 'transparent';
+    g.fillStyle = ink; g.textAlign = 'center';
+    lines.forEach((line, i) => { g.font = font(900, line.size); g.fillText(line.text, 0, line.y); });
+    g.restore();
+  }
+
+  function flyer(theme) {
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'); g.textBaseline = 'alphabetic';
+
+    // Hero zone
+    g.fillStyle = theme.hero; g.fillRect(0, 0, W, 880);
+    // soft spotlight behind the hero products
+    const glow = g.createRadialGradient(660, 470, 40, 660, 470, 520); glow.addColorStop(0, '#FFFFFF33'); glow.addColorStop(1, '#FFFFFF00');
+    g.fillStyle = glow; g.fillRect(0, 0, W, 880);
+
+    // Logo flag hanging from the top-left
+    g.save(); g.shadowColor = '#00000033'; g.shadowBlur = 24; g.shadowOffsetY = 8;
+    g.fillStyle = WHITE; g.beginPath(); g.roundRect(44, -20, 300, 330, 18); g.fill(); g.restore();
+    const lw = 220, lh = lw * logo.naturalHeight / logo.naturalWidth; g.drawImage(logo, 84, 28, lw, lh);
+    g.textAlign = 'center';
+    g.font = font(900, 38); g.fillStyle = RED; g.fillText('ALLMAT', 194, 236);
+    g.font = font(900, 30); g.fillStyle = BLACK; g.fillText('VÄRMLAND AB', 194, 270);
+    g.font = font(500, 18, 'Noto Sans Arabic'); g.fillStyle = '#595D54'; g.fillText('Mat från hela världen', 194, 296);
+    g.textAlign = 'left';
+
+    // Headline
+    g.fillStyle = theme.heroInk; g.globalAlpha = 0.9; g.font = font(700, 32); g.fillText('Måndag 18/9 – söndag 24/9', 390, 70); g.globalAlpha = 1;
+    g.font = font(900, 92); g.fillText('Veckans bästa', 388, 160);
+    g.fillStyle = theme.highlight; g.fillText('erbjudanden', 388, 246);
+
+    // Hero products + tags
+    drawCutout(g, cutout('bag', 28), 370, 240, 400, 400, -0.06);
+    drawCutout(g, cutout('fruit', 48), 680, 270, 380, 380, 0.04);
+    g.fillStyle = theme.heroInk; g.font = font(700, 34); g.fillText('Basmati ris', 392, 690); g.font = font(500, 22, 'Noto Sans Arabic'); g.globalAlpha = 0.85; g.fillText('5 kg · jfr-pris 19,99/kg', 392, 722); g.globalAlpha = 1;
+    tag(g, 392, 778, 0.66, { price: '99', dec: '95', old: 'Ord. 149,95', percent: 33, colors: theme.tag });
+    g.fillStyle = theme.heroInk; g.font = font(700, 34); g.fillText('Citroner', 760, 690); g.font = font(500, 22, 'Noto Sans Arabic'); g.globalAlpha = 0.85; g.fillText('Klass 1 · Spanien', 760, 722); g.globalAlpha = 1;
+    tag(g, 760, 778, 0.66, { price: '24', dec: '95', unit: '/kg', colors: theme.tag });
+
+    // Side teaser under the flag
+    g.fillStyle = theme.highlight; g.font = font(900, 56); g.fillText('Alltid', 60, 400);
+    g.fillStyle = theme.heroInk; g.fillText('färskt', 60, 458);
+    drawCutout(g, cutout('fruit', 8), 40, 470, 300, 300, -0.05);
+    tag(g, 60, 778, 0.66, { price: '5', unit: '/st', colors: theme.tag });
+
+    // Three panels
+    const panels = [
+      { fill: theme.p1, ink: theme.p1Ink, title: 'fr. måndag', kind: 'box', hue: 140, name: 'Halloumi', sub: '3 × 250 g', t: { price: '49', dec: '95', old: 'Ord. 74,85', percent: 33 }, badge: true },
+      { fill: theme.p2, ink: theme.p2Ink, title: 'fr. måndag', kind: 'bottle', hue: 90, name: 'Olivolja', sub: 'Extra virgin · 1 L', t: { price: '79', dec: '95' } },
+      { fill: theme.p3, ink: theme.p3Ink, title: 'fr. torsdag', kind: 'bag', hue: 200, name: 'Dadlar', sub: 'Medjool · 1 kg', t: { price: '59', dec: '95', old: 'Ord. 79,95', percent: 25 } },
+    ];
+    const py = 892, ph = 370, gap = 12, pw = (W - gap * 2) / 3;
+    panels.forEach((p, i) => {
+      const x = i * (pw + gap);
+      g.fillStyle = p.fill; g.fillRect(x, py, pw, ph);
+      g.fillStyle = p.ink; g.font = font(700, 26); g.fillText(p.title, x + 20, py + 38);
+      drawCutout(g, cutout(p.kind, p.hue), x + 60, py + 40, 250, 250, i === 1 ? 0.05 : -0.04);
+      g.fillStyle = p.ink; g.font = font(900, 34); g.fillText(p.name, x + 20, py + ph - 56);
+      g.font = font(500, 19, 'Noto Sans Arabic'); g.globalAlpha = 0.85; g.fillText(p.sub, x + 20, py + ph - 28); g.globalAlpha = 1;
+      tag(g, x + pw - 176, py + ph - 108, 0.5, { ...p.t, colors: i === 1 ? theme.tagAlt : theme.tag });
+      if (p.badge) burst(g, x + pw - 74, py + 92, 64, [{ text: 'MEGA', size: 30, y: -6 }, { text: 'PRIS', size: 34, y: 28 }], theme.burst, theme.burstInk);
+    });
+
+    // Footer
+    g.fillStyle = WHITE; g.fillRect(0, py + ph + 12, W, H - (py + ph + 12));
+    g.fillStyle = BLACK; g.font = font(700, 24); g.fillText('Öppet alla dagar 9–21', 44, H - 30);
+    g.font = font(500, 20, 'Noto Sans Arabic'); g.fillStyle = '#595D54';
+    const tail = 'Så långt lagret räcker · Med reservation för slutförsäljning'; g.fillText(tail, W - 44 - g.measureText(tail).width, H - 30);
+    return c;
+  }
+
+  const themes = {
+    'Röd': { hero: RED, heroInk: WHITE, highlight: YELLOW, p1: YELLOW, p1Ink: BLACK, p2: GREEN, p2Ink: WHITE, p3: BLACK, p3Ink: WHITE,
+      tag: { slab: YELLOW, slabInk: BLACK, box: WHITE, ink: BLACK }, tagAlt: { slab: RED, slabInk: WHITE, box: YELLOW, ink: BLACK }, burst: RED, burstInk: WHITE },
+    'Gul': { hero: YELLOW, heroInk: BLACK, highlight: RED, p1: RED, p1Ink: WHITE, p2: CREAM, p2Ink: BLACK, p3: GREEN, p3Ink: WHITE,
+      tag: { slab: RED, slabInk: WHITE, box: WHITE, ink: BLACK }, tagAlt: { slab: BLACK, slabInk: WHITE, box: YELLOW, ink: BLACK }, burst: YELLOW, burstInk: BLACK },
+  };
+
+  const grid = document.getElementById('grid');
+  let i = 0;
+  for (const [name, theme] of Object.entries(themes)) {
+    const c = flyer(theme);
+    const f = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = `Reklamblad · ${name}`;
+    f.append(c, cap); grid.append(f);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.92));
+    await fetch(`./dev/out/flyer-${i += 1}.jpg`, { method: 'PUT', body: blob });
+  }
+  document.title = 'done';
+</script>
+</html>
