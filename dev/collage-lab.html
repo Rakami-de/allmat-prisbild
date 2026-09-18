@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="sv">
+<meta charset="utf-8">
+<title>Collage study</title>
+<base href="../">
+<style>
+  body { margin: 16px; background: #cfcfc9; font: 14px system-ui; }
+  #grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+  canvas { width: 100%; height: auto; display: block; box-shadow: 0 4px 16px #0003; }
+  figure { margin: 0; } figcaption { padding: 6px 0; font-weight: 600; }
+</style>
+<div id="grid"></div>
+<script type="module">
+  // Design study only — nothing here ships in the app yet.
+  const RED = '#D10101', GREEN = '#1A6309', BLACK = '#0E0E0E', MUTED = '#6A6E65', YELLOW = '#FFD21F', HAIR = '#E4E5DF';
+  const W = 1080;
+
+  await Promise.all([600, 700, 900].map((w) => new FontFace('Barlow Condensed', `url(./assets/fonts/barlow-condensed-${w}-latin.woff2)`, { weight: String(w) }).load().then((f) => document.fonts.add(f))));
+  await new FontFace('Noto Sans Arabic', 'url(./assets/fonts/noto-sans-arabic-var-latin.woff2)', { weight: '400 900' }).load().then((f) => document.fonts.add(f));
+  const load = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+  const logo = await load('./assets/brand/logo-mark.png');
+  const egg = await load('./dev/out/user-egg.jpg');
+
+  const font = (w, size, fam = 'Barlow Condensed') => `${w} ${size}px "${fam}"`;
+
+  // Stand-in product photos: a surface plus a few round "items" in one hue.
+  function fakePhoto(seed) {
+    const c = document.createElement('canvas'); c.width = 600; c.height = 600;
+    const g = c.getContext('2d');
+    const surfaces = [['#3b2f27', '#241c17'], ['#e9e4da', '#cfc8ba'], ['#34423a', '#1f2a24'], ['#f3efe8', '#ddd6c9'], ['#2b2b2e', '#17171a']];
+    const hues = [48, 8, 100, 28, 350, 75, 18, 140, 40, 0, 60, 300];
+    const [a, b] = surfaces[seed % surfaces.length];
+    const bg = g.createLinearGradient(0, 0, 600, 600); bg.addColorStop(0, a); bg.addColorStop(1, b);
+    g.fillStyle = bg; g.fillRect(0, 0, 600, 600);
+    const hue = hues[seed % hues.length];
+    const n = 2 + (seed % 4);
+    for (let i = 0; i < n; i += 1) {
+      const x = 170 + ((seed * 131 + i * 173) % 260), y = 170 + ((seed * 71 + i * 211) % 260), r = 95 + ((seed * 17 + i * 29) % 60);
+      g.save(); g.shadowColor = '#0008'; g.shadowBlur = 36; g.shadowOffsetY = 16;
+      const k = g.createRadialGradient(x - r / 3, y - r / 3, r / 10, x, y, r);
+      k.addColorStop(0, `hsl(${hue} 95% 78%)`); k.addColorStop(0.55, `hsl(${hue} 85% 52%)`); k.addColorStop(1, `hsl(${hue} 80% 34%)`);
+      g.fillStyle = k; g.beginPath(); g.ellipse(x, y, r, r * 0.9, 0.4, 0, 7); g.fill(); g.restore();
+    }
+    return c;
+  }
+
+  function cover(g, img, x, y, w, h, src = null) {
+    const sx = src?.x ?? 0, sy = src?.y ?? 0;
+    const iw = src?.w ?? (img.naturalWidth ?? img.width), ih = src?.h ?? (img.naturalHeight ?? img.height);
+    const s = Math.max(w / iw, h / ih);
+    const cw = w / s, ch = h / s;
+    g.drawImage(img, sx + (iw - cw) / 2, sy + (ih - ch) / 2, cw, ch, x, y, w, h);
+  }
+
+  // Price lockup centred in a box: optional "5 för", big integer, raised decimals, "kr/kg".
+  function priceIn(g, p, cx, baseline, size) {
+    const small = Math.round(size * 0.44), tiny = Math.max(15, Math.round(size * 0.3)), pre = Math.round(size * 0.42);
+    g.font = font(900, size); const wi = g.measureText(p.int).width; const cap = g.measureText('0').actualBoundingBoxAscent;
+    g.font = font(900, small); const wd = p.dec ? g.measureText(p.dec).width : 0; const capSmall = g.measureText('0').actualBoundingBoxAscent;
+    const krText = `kr${p.unit ?? ''}`;
+    g.font = font(700, tiny); const wk = g.measureText(krText).width;
+    g.font = font(700, pre); const wp = p.multi ? g.measureText(`${p.multi} för`).width + size * 0.12 : 0;
+    const gap = size * 0.06, col = Math.max(wd, wk);
+    let x = cx - (wp + wi + gap + col) / 2;
+    g.fillStyle = BLACK;
+    if (p.multi) { g.font = font(700, pre); g.fillText(`${p.multi} för`, x, baseline); x += wp; }
+    g.font = font(900, size); g.fillText(p.int, x, baseline); x += wi + gap;
+    if (p.dec) { g.font = font(900, small); g.fillText(p.dec, x, baseline - cap + capSmall); }
+    g.font = font(700, tiny); g.fillText(krText, x, baseline);
+  }
+
+  function header(g, { title, note }, h) {
+    g.fillStyle = '#fff'; g.fillRect(0, 0, W, h);
+    const lh = h - 56, lw = lh * logo.naturalWidth / logo.naturalHeight;
+    g.drawImage(logo, 44, 28, lw, lh);
+    const x0 = 44 + lw + 26;
+
+    // The title is the hero; a yellow marker stroke sits behind its lower half.
+    let size = 70; g.font = font(900, size);
+    while (g.measureText(title).width > W - 44 - x0 && size > 40) { size -= 2; g.font = font(900, size); }
+    const tw = g.measureText(title).width, ty = 96;
+    g.fillStyle = YELLOW; g.fillRect(x0 - 8, ty - size * 0.34, tw + 16, size * 0.4);
+    g.fillStyle = BLACK; g.fillText(title, x0, ty);
+
+    let x = x0; const bs = 30; g.font = font(900, bs);
+    for (const [word, c] of [['ALLMAT', RED], ['VÄRMLAND', BLACK], ['AB', GREEN]]) { g.fillStyle = c; g.fillText(word, x, 142); x += g.measureText(word).width + bs * 0.22; }
+    g.fillStyle = MUTED; g.font = font(500, 24, 'Noto Sans Arabic');
+    g.fillText(note, W - 44 - g.measureText(note).width, 142);
+  }
+
+  function footer(g, text, y, h) {
+    g.fillStyle = HAIR; g.fillRect(44, y, W - 88, 2);
+    g.fillStyle = MUTED; g.font = font(500, 22, 'Noto Sans Arabic');
+    const w = g.measureText(text).width; g.fillText(text, (W - w) / 2, y + h / 2 + 10);
+  }
+
+  function collage(H, cols, products, meta) {
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'); g.textBaseline = 'alphabetic';
+    g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+    const headH = 170, footH = 70, pad = 44, gap = cols >= 4 ? 14 : 18;
+    header(g, meta, headH);
+    footer(g, meta.footer, H - footH, footH);
+
+    const rows = Math.ceil(products.length / cols);
+    const cw = (W - pad * 2 - gap * (cols - 1)) / cols;
+    const ch = (H - headH - footH - 16 - gap * (rows - 1)) / rows;
+    const tagH = Math.round(Math.min(ch * 0.3, cw * 0.36));
+    const r = cols >= 4 ? 16 : 22;
+
+    products.forEach((p, i) => {
+      const x = pad + (i % cols) * (cw + gap), y = headH + Math.floor(i / cols) * (ch + gap);
+      g.save(); g.beginPath(); g.roundRect(x, y, cw, ch, r); g.clip();
+      if (p.photo === 'egg' && egg) cover(g, egg, x, y, cw, ch - tagH, { x: 120, y: 60, w: 760, h: 640 });
+      else cover(g, fakePhoto(i + 1), x, y, cw, ch - tagH);
+      g.fillStyle = YELLOW; g.fillRect(x, y + ch - tagH, cw, tagH);
+      g.restore();
+
+      const hasName = Boolean(p.name) && tagH > 70;
+      const nameSize = Math.round(tagH * 0.26);
+      if (hasName) {
+        g.fillStyle = BLACK; g.font = font(600, nameSize);
+        let name = p.name.toUpperCase();
+        while (g.measureText(name).width > cw - 20 && name.length > 3) name = `${name.slice(0, -2)}…`;
+        g.fillText(name, x + (cw - g.measureText(name).width) / 2, y + ch - tagH + nameSize + 8);
+      }
+      let size = Math.round(tagH * (hasName ? 0.56 : 0.78));
+      // Shrink until the lockup fits the cell width.
+      for (; size > 20; size -= 2) {
+        g.font = font(900, size);
+        const est = g.measureText(p.int).width + size * 0.95 + (p.multi ? size * 1.5 : 0);
+        if (est <= cw - 20) break;
+      }
+      g.font = font(900, size); const cap = g.measureText('0').actualBoundingBoxAscent;
+      const top = y + ch - tagH + (hasName ? nameSize + 14 : 0);
+      priceIn(g, p, x + cw / 2, Math.round((top + y + ch + cap) / 2), size);
+    });
+    return c;
+  }
+
+  const P = (int, dec, unit, name, extra = {}) => ({ int, dec, unit, name, ...extra });
+  const catalogue = [
+    P('24', '95', '/kg', 'Citroner'), P('9', '95', '/kg', 'Bananer'), P('10', null, '', 'Persilja', { multi: 5 }), P('30', null, '', 'Leksaksägg', { photo: 'egg' }),
+    P('99', '95', '', 'Basmati ris 5 kg'), P('11', '95', '/kg', 'Apelsiner'), P('1000', null, '/kg', 'Saffran'), P('29', '95', '/kg', 'Kapya paprika'),
+    P('19', '95', '/st', 'Halloumi'), P('30', null, '', 'Gurka', { multi: 2 }), P('49', '95', '', 'Olivolja 1 L'), P('14', '95', '/kg', 'Aubergine'),
+    P('39', '95', '/kg', 'Vindruvor'), P('25', null, '', 'Mynta', { multi: 3 }), P('59', '95', '', 'Tahini 800 g'), P('12', '95', '/kg', 'Lök'),
+    P('89', '95', '/kg', 'Lammfärs'), P('15', null, '/st', 'Libabröd'), P('34', '95', '', 'Dadlar 1 kg'), P('7', '95', '/st', 'Granatäpple'),
+  ];
+
+  const studies = [
+    ['20 produkter · 4:5', 1350, 4, catalogue, { title: 'VECKANS ERBJUDANDEN', note: 'Gäller 18–24 september', footer: 'Så långt lagret räcker · Välkommen in!' }],
+    ['12 produkter · 4:5', 1350, 3, catalogue.slice(0, 12), { title: 'NYTT I BUTIKEN', note: 'Färskt varje dag', footer: 'Så långt lagret räcker · Välkommen in!' }],
+    ['6 produkter · 1:1', 1080, 3, catalogue.slice(0, 6), { title: 'HELGENS PRISER', note: 'Fredag–söndag', footer: 'Så långt lagret räcker · Välkommen in!' }],
+  ];
+
+  const grid = document.getElementById('grid');
+  for (const [i, [label, H, cols, items, meta]] of studies.entries()) {
+    const c = collage(H, cols, items, meta);
+    const f = document.createElement('figure'); const cap = document.createElement('figcaption'); cap.textContent = label;
+    f.append(c, cap); grid.append(f);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.92));
+    await fetch(`./dev/out/collage-${i + 1}.jpg`, { method: 'PUT', body: blob });
+  }
+  document.title = 'done';
+</script>
+</html>

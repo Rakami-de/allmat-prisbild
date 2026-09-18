@@ -52,6 +52,7 @@ ul { list-style: none; }
   inset: 0 0 auto;
   height: var(--viewport-height, 100%);
   overflow-y: auto;
+  overflow-anchor: none;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }
@@ -160,6 +161,8 @@ a.round { color: inherit; text-decoration: none; }
   z-index: var(--z-sticky);
 }
 .action-bar-split { flex-direction: row; }
+/* While the keyboard is up the footer would cover half of what is left of the screen. */
+.editor:has(input:focus) .action-bar { display: none; }
 .action-bar-split .btn { flex: 1; }
 .action-bar-split .btn-primary { flex: 1.6; }
 .hint { text-align: center; font-size: var(--type-caption); color: var(--ui-text-muted); }

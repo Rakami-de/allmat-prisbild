@@ -154,8 +154,11 @@ function paint(direction) {
     const result = VIEWS[state.view](app, state.params);
     const el = result.el ?? result;
     cleanup = result.destroy ?? null;
+    // A refresh of the same screen (new colour, removed photo, reorder) must keep the user's
+    // place; only a real navigation starts from the top.
+    const keep = direction === 'none' ? root.scrollTop : 0;
     root.replaceChildren(el);
-    root.scrollTop = 0;
+    root.scrollTop = keep;
   };
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (direction === 'none' || reduced || !document.startViewTransition) { swap(); return; }
@@ -247,13 +250,33 @@ function watchForUpdates() {
 function trackKeyboard() {
   const viewport = window.visualViewport;
   if (!viewport) return;
-  const apply = () => document.documentElement.style.setProperty('--viewport-height', `${viewport.height}px`);
+
+  // iOS also pans the whole page when the keyboard opens, even though only #view scrolls.
+  // Pin the page back and let the view, sized to the visible area, do the scrolling.
+  const apply = () => {
+    document.documentElement.style.setProperty('--viewport-height', `${viewport.height}px`);
+    if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
+  };
   viewport.addEventListener('resize', apply);
+  viewport.addEventListener('scroll', apply);
   apply();
+
+  // Nudge a focused field into view only when the keyboard really covers it, by exactly the
+  // amount needed. An unconditional scrollIntoView fights Safari's own scroll and makes the
+  // screen lurch.
   document.addEventListener('focusin', (event) => {
-    if (!event.target.matches?.('input')) return;
-    setTimeout(() => event.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 320);
+    const field = event.target;
+    if (!field.matches?.('input')) return;
+    setTimeout(() => {
+      if (document.activeElement !== field) return;
+      const rect = field.getBoundingClientRect();
+      const footer = root.querySelector('.action-bar')?.offsetHeight ?? 0;
+      const visibleBottom = viewport.height - footer - 16;
+      if (rect.bottom > visibleBottom) root.scrollBy({ top: rect.bottom - visibleBottom, behavior: 'smooth' });
+      else if (rect.top < 72) root.scrollBy({ top: rect.top - 72, behavior: 'smooth' });
+    }, 350);
   });
+  document.addEventListener('focusout', () => setTimeout(apply, 50));
 }
 
 // ---------- boot ----------

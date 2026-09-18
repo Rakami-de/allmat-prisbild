@@ -122,6 +122,24 @@ test('Signatur sets the name in capitals, centred in its column', () => {
   assert.ok(name.x > 60);
 });
 
+test('with no product text the logo grows to fill the space, left of the price block', () => {
+  for (const template of ['sockel', 'kort']) {
+    const idle = layoutFor(template, '30');
+    const named = layoutFor(template, '30', { name: 'Citroner' });
+    const block = priceBlock(idle);
+    assert.ok(idle.logo.h > named.logo.h, template);
+    assert.ok(idle.brand.size >= named.brand.size, template);
+    assert.ok(idle.logo.x + idle.logo.w < block.x, template);
+  }
+  assert.equal(layoutFor('sockel', '30').brand.cx, 305, 'Sockel centres the stacked lockup in the plinth');
+});
+
+test('Signatur shows the shop name when there is no product name', () => {
+  const l = computeLayout({ template: 'signatur', fields: blank, priceParts: parts('30'), storeName: 'Allmat Värmland AB', measure });
+  assert.equal(l.name.text, 'ALLMAT VÄRMLAND AB');
+  assert.equal(layoutFor('sockel', '30').name, null);
+});
+
 test('unknown template falls back to Sockel', () => {
   assert.deepEqual(layoutFor('retro', '5').photo, layoutFor('sockel', '5').photo);
 });

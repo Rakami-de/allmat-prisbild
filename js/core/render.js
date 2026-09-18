@@ -116,6 +116,7 @@ export function layoutForItem(ctx, item, template) {
     priceParts: price.ok ? formatPriceParts(price.ore) : { int: '–', dec: null },
     oldPriceParts: old.ok ? formatPriceParts(old.ore) : null,
     template,
+    storeName: STORE.name,
     measure: makeMeasure(ctx),
   });
 }
@@ -145,11 +146,13 @@ export function renderItem(canvas, { item, photo, colorway, template, assets }) 
   // The shop name is set in type rather than taken from the logo bitmap, so it stays sharp.
   if (layout.brand) {
     ctx.font = cssFont({ family: FONT.price, weight: 900, size: layout.brand.size });
-    let brandX = layout.brand.x;
+    const gap = layout.brand.size * 0.22;
+    const total = STORE.brandWords.reduce((sum, [word]) => sum + ctx.measureText(word).width, 0) + gap * (STORE.brandWords.length - 1);
+    let brandX = layout.brand.cx === undefined ? layout.brand.x : layout.brand.cx - total / 2;
     for (const [word, color] of STORE.brandWords) {
       ctx.fillStyle = color;
       ctx.fillText(word, brandX, layout.brand.baseline);
-      brandX += ctx.measureText(word).width + layout.brand.size * 0.22;
+      brandX += ctx.measureText(word).width + gap;
     }
   }
 

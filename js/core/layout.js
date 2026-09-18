@@ -24,6 +24,8 @@ const TEMPLATE = {
     ],
     logo: { x: 52, y: 866, w: 160, h: 120 },
     brand: { x: 228, baseline: 916, size: 40 },
+    // With no product text the logo and shop name stack, centred, and fill the plinth.
+    idle: { logo: { x: 195, y: 846, w: 220, h: 146 }, brand: { cx: 305, baseline: 1040, size: 44 } },
     text: { x: 228, maxW: 360, name: { baseline: 966, size: 36 }, note: { baseline: 1010, size: 26 }, ink: 'ink', muted: 'muted', align: 'left' },
     price: { x: [650, 1040], y: [800, 1040], oldY: 776, max: 250, on: 'on' },
     pills: { x: 40, y: 40 },
@@ -38,6 +40,7 @@ const TEMPLATE = {
     ],
     logo: { x: 76, y: 830, w: 130, h: 96 },
     brand: { x: 220, baseline: 894, size: 34 },
+    idle: { logo: { x: 70, y: 852, w: 180, h: 136 }, brand: { x: 262, baseline: 936, size: 38 } },
     text: { x: 80, maxW: 500, name: { baseline: 972, size: 34 }, note: { baseline: 1012, size: 24 }, ink: 'ink', muted: 'muted', align: 'left' },
     price: { x: [644, 1006], y: [836, 1006], oldY: 812, max: 230, on: 'on' },
     pills: { x: 40, y: 40 },
@@ -166,7 +169,7 @@ function pill(text, x, y, measure) {
 
 // ---------- public ----------
 
-export function computeLayout({ template = 'sockel', fields, priceParts, oldPriceParts = null, measure }) {
+export function computeLayout({ template = 'sockel', fields, priceParts, oldPriceParts = null, storeName = '', measure }) {
   const spec = TEMPLATE[template] ?? TEMPLATE.sockel;
   const showOld = fields.mode === 'kampanj' && oldPriceParts !== null;
   const warnings = [];
@@ -191,8 +194,10 @@ export function computeLayout({ template = 'sockel', fields, priceParts, oldPric
   const column = spec.text;
   let name = null;
   let note = null;
-  if (fields.name?.trim()) {
-    const raw = column.name.caps ? fields.name.trim().toLocaleUpperCase('sv') : fields.name.trim();
+  // Templates without a brand line (Signatur) show the shop name where the product name would be.
+  const nameText = fields.name?.trim() || (spec.brand ? '' : storeName);
+  if (nameText) {
+    const raw = column.name.caps ? nameText.toLocaleUpperCase('sv') : nameText;
     const family = column.name.caps ? FONT.price : FONT.text;
     const line = fitLine(raw, { family, weight: 600, size: column.name.size, minSize: column.name.size - 10 }, column.maxW, measure);
     if (line.overflow) warnings.push('name-overflow');
@@ -205,9 +210,10 @@ export function computeLayout({ template = 'sockel', fields, priceParts, oldPric
     note = { ...placeLine(line, column, name ? column.note.baseline : column.name.baseline), color: column.muted };
   }
 
+  const idle = !name && !note && spec.idle ? spec.idle : null;
   return {
     size: SIZE, template,
-    photo: spec.photo, shapes: spec.shapes, logo: spec.logo, brand: spec.brand,
+    photo: spec.photo, shapes: spec.shapes, logo: idle?.logo ?? spec.logo, brand: idle?.brand ?? spec.brand,
     price, tag, weight, name, note, warnings,
   };
 }
