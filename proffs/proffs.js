@@ -1,4 +1,5 @@
 // Proffsbilder — experiment. See README.md in this folder.
+import { cleanMask } from './mask.js';
 
 const MODELS = {
   fast: {
@@ -20,6 +21,7 @@ const TEXT = {
     model: 'Modell', fast: 'Snabb', fastHint: '5 MB · mjukare kanter', fine: 'Noggrann', fineHint: '44 MB · skarpare, tyngre',
     pick: 'Välj bild', shoot: 'Ta foto',
     downloading: 'Hämtar modellen… {p}', starting: 'Startar modellen…', running: 'Frilägger varan…', preparing: 'Läser bilden…',
+    cleanOn: 'Städning: på', cleanOff: 'Städning: av',
     backdrop: 'Bakgrund', before: 'Före', after: 'Efter', save: 'Spara PNG', again: 'Ny bild',
     stats: 'Modell: {load} · Friläggning: {run} · Bild: {w}×{h}', cachedModel: 'redan sparad', seconds: '{n} s',
     tip: 'Tips: lägg varan på ett tomt bord eller en vit kartong i dagsljus. Ju renare bakgrund, desto bättre kant.',
@@ -31,6 +33,7 @@ const TEXT = {
     model: 'الموديل', fast: 'سريع', fastHint: '5 ميغا · حواف أنعم', fine: 'دقيق', fineHint: '44 ميغا · أدق وأثقل',
     pick: 'اختر صورة', shoot: 'التقط صورة',
     downloading: 'جاري تحميل الموديل… {p}', starting: 'جاري تشغيل الموديل…', running: 'جاري قص المنتج…', preparing: 'جاري قراءة الصورة…',
+    cleanOn: 'التنظيف: شغّال', cleanOff: 'التنظيف: مطفي',
     backdrop: 'الخلفية', before: 'قبل', after: 'بعد', save: 'احفظ PNG', again: 'صورة جديدة',
     stats: 'الموديل: {load} · القص: {run} · الصورة: {w}×{h}', cachedModel: 'محفوظ مسبقاً', seconds: '{n} ث',
     tip: 'نصيحة: حط المنتج على طاولة فاضية أو كرتونة بيضا بضوء النهار. كل ما كانت الخلفية أنظف طلعت الحواف أحلى.',
@@ -47,7 +50,7 @@ const $ = (id) => document.getElementById(id);
 for (const el of document.querySelectorAll('[data-t]')) el.textContent = t(el.dataset.t);
 $('back').setAttribute('aria-label', t('back'));
 
-const state = { model: 'fast', backdrop: 'rod', showBefore: false, photo: null, cutout: null };
+const state = { model: 'fast', backdrop: 'rod', showBefore: false, clean: true, photo: null, cutout: null, last: null };
 let worker = null;
 
 // ---------- model picker and backdrops ----------
@@ -56,6 +59,8 @@ function paintChoices() {
   for (const button of document.querySelectorAll('[data-model]')) button.classList.toggle('is-selected', button.dataset.model === state.model);
   for (const button of document.querySelectorAll('[data-backdrop]')) button.classList.toggle('is-selected', button.dataset.backdrop === state.backdrop);
   $('compare').textContent = t(state.showBefore ? 'after' : 'before');
+  $('clean').textContent = t(state.clean ? 'cleanOn' : 'cleanOff');
+  $('clean').classList.toggle('is-on', state.clean);
 }
 for (const button of document.querySelectorAll('[data-model]')) {
   button.addEventListener('click', () => { state.model = button.dataset.model; paintChoices(); if (state.photo) run(); });
@@ -64,6 +69,8 @@ for (const button of document.querySelectorAll('[data-backdrop]')) {
   button.style.setProperty('--swatch', BACKDROPS[button.dataset.backdrop] ?? 'transparent');
   button.addEventListener('click', () => { state.backdrop = button.dataset.backdrop; paintChoices(); drawPreview(); });
 }
+// Re-uses the last raw mask, so switching the clean-up on and off costs no new model run.
+$('clean').addEventListener('click', () => { state.clean = !state.clean; paintChoices(); if (state.last) finish(...state.last); });
 $('compare').addEventListener('click', () => { state.showBefore = !state.showBefore; paintChoices(); drawPreview(); });
 
 // ---------- photo intake ----------
@@ -150,6 +157,9 @@ const smoothstep = (lo, hi, v) => { const x = Math.min(1, Math.max(0, (v - lo) /
 function finish({ mask, loadMs, runMs, cached }, model, w, h) {
   const S = model.size;
   const photo = state.photo;
+  state.last = [{ mask, loadMs, runMs, cached }, model, w, h];
+  // The clean-up already removes haze, so its outline band can use a gentler curve (smoother edge).
+  const cleaned = state.clean ? cleanMask(mask, S, w, h, [0.2, 0.8]) : null;
 
   // Mask → small alpha image → scaled up to the photo with smoothing.
   const small = document.createElement('canvas');
@@ -158,7 +168,7 @@ function finish({ mask, loadMs, runMs, cached }, model, w, h) {
   const smallData = sctx.createImageData(w, h);
   for (let y = 0; y < h; y += 1) {
     for (let x = 0; x < w; x += 1) {
-      const a = Math.round(mask[y * S + x] * 255);
+      const a = Math.round((cleaned ? cleaned[y * w + x] : mask[y * S + x]) * 255);
       const p = (y * w + x) * 4;
       smallData.data[p] = a; smallData.data[p + 1] = a; smallData.data[p + 2] = a; smallData.data[p + 3] = 255;
     }
@@ -182,7 +192,8 @@ function finish({ mask, loadMs, runMs, cached }, model, w, h) {
   for (let y = 0; y < out.height; y += 1) {
     for (let x = 0; x < out.width; x += 1) {
       const p = (y * out.width + x) * 4;
-      const a = Math.round(smoothstep(model.edge[0], model.edge[1], alpha[p] / 255) * 255);
+      // The cleaned mask already carries its final values; the raw one still needs the levels curve.
+      const a = cleaned ? alpha[p] : Math.round(smoothstep(model.edge[0], model.edge[1], alpha[p] / 255) * 255);
       pixels.data[p + 3] = a;
       if (a > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     }

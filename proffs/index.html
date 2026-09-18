@@ -30,6 +30,8 @@
     .backdrop { width: var(--touch-min); height: var(--touch-min); border-radius: var(--radius-pill); border: 2px solid var(--ui-border); background: var(--swatch); }
     .backdrop[data-backdrop='rutig'] { background: repeating-conic-gradient(#DADAD5 0 25%, #F4F4F1 0 50%) 0 0 / 16px 16px; }
     .backdrop.is-selected { border-color: var(--ui-text); box-shadow: 0 0 0 2px var(--ui-bg), 0 0 0 4px var(--ui-text); }
+    .toggles { display: flex; flex-direction: column; gap: var(--space-2); }
+    #clean.is-on { background: var(--ui-accent-soft); border-color: var(--ui-accent); color: var(--ui-accent); }
     .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
     .result { display: flex; flex-direction: column; gap: var(--space-4); }
     .stats { font-size: var(--type-caption); color: var(--ui-text-muted); font-variant-numeric: tabular-nums; }
@@ -84,7 +86,10 @@
               <button class="backdrop" data-backdrop="rutig" aria-label="Genomskinlig"></button>
             </div>
           </div>
-          <button class="btn btn-secondary btn-small" id="compare"></button>
+          <div class="toggles">
+            <button class="btn btn-secondary btn-small" id="clean"></button>
+            <button class="btn btn-secondary btn-small" id="compare"></button>
+          </div>
         </div>
         <p class="stats" id="stats" dir="auto"></p>
         <div class="split">
