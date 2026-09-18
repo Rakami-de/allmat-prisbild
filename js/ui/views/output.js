@@ -1,7 +1,6 @@
 import { h, icon } from '../dom.js';
 import { generateAll, canShareFiles, shareFiles } from '../../core/export.js';
 import { readyItems } from '../../core/batch.js';
-import { planPages } from '../../core/collage.js';
 import { openViewer } from '../components/viewer.js';
 
 export function renderOutput(app) {
@@ -48,12 +47,12 @@ export function renderOutput(app) {
       try { await shareFiles(list); } catch (error) { app.fail(error); }
     };
 
-    // Which product to open when the user wants to change an image. A Lista sheet holds many
-    // products, so it opens the first one on that sheet.
+    // Changing one image opens that product's editor. A Lista sheet is many products plus the
+    // sheet's own options (style, title, notes), so it opens the batch screen, where all of that
+    // lives and every product is one tap away.
     const items = readyItems(state.batch);
-    const pages = state.batch.template === 'lista' ? planPages(items.length) : null;
-    const editIdFor = (index) => (pages ? items[pages[index].start] : items[index])?.id;
-    const edit = (index) => app.go('editor', { id: editIdFor(index), from: 'output' });
+    const isList = state.batch.template === 'lista';
+    const edit = (index) => (isList ? app.go('batch') : app.go('editor', { id: items[index]?.id, from: 'output' }));
 
     const slides = files.map((file, index) => {
       const url = URL.createObjectURL(file);

@@ -187,7 +187,8 @@ export function renderEditor(app, { id, from = 'batch' }) {
   const onSaved = () => { saved.classList.add('is-visible'); clearTimeout(savedTimer); savedTimer = setTimeout(() => saved.classList.remove('is-visible'), 1400); };
   document.addEventListener('allmat:saved', onSaved);
 
-  // Opened from the finished images? Then "back" and "done" return there and rebuild them.
+  // Opened from the finished images? Then "back" and "done" return there and rebuild them;
+  // previous/next still walk through every product on the way.
   const leave = () => app.go(from === 'output' ? 'output' : 'batch');
   const goTo = (offset) => app.go('editor', { id: items()[index + offset].id, from });
   const isLast = index === total - 1;
@@ -196,7 +197,8 @@ export function renderEditor(app, { id, from = 'batch' }) {
     h('header', { class: 'bar' },
       h('button', { class: 'round', 'aria-label': t('common.back'), onclick: leave }, icon('back', 'icon flip-rtl')),
       h('div', { class: 'bar-title' }, h('h1', {}, t('editor.position', { n: index + 1, total }))),
-      saved),
+      saved,
+      h('button', { class: 'text-btn', onclick: leave }, t('editor.done'))),
     h('div', { class: 'preview' }, canvas, h('p', { class: 'muted small preview-hint' }, t('editor.photoHint'))),
     h('section', { class: 'form' },
       h('div', { class: 'field' },
@@ -211,8 +213,8 @@ export function renderEditor(app, { id, from = 'batch' }) {
       more),
     h('footer', { class: 'action-bar action-bar-split' },
       h('button', { class: 'btn btn-secondary', disabled: index === 0, onclick: () => goTo(-1) }, icon('back', 'icon flip-rtl'), t('editor.prev')),
-      h('button', { class: 'btn btn-primary', onclick: () => (isLast || from === 'output' ? leave() : goTo(1)) },
-        t(isLast || from === 'output' ? 'editor.done' : 'editor.next'), isLast || from === 'output' ? icon('check') : icon('forward', 'icon flip-rtl'))));
+      h('button', { class: 'btn btn-primary', onclick: () => (isLast ? leave() : goTo(1)) },
+        t(isLast ? 'editor.done' : 'editor.next'), isLast ? icon('check') : icon('forward', 'icon flip-rtl'))));
 
   if (!fields.price) setTimeout(() => { if (alive && matchMedia('(pointer: fine)').matches) priceInput.focus(); }, 300);
 
