@@ -1,5 +1,5 @@
 // App-shell cache. Bump VERSION on every deploy so installed phones pick up the new files.
-const VERSION = 'v4';
+const VERSION = 'v5';
 const PREFIX = 'allmat-prisbild-';
 const CACHE = `${PREFIX}${VERSION}`;
 
@@ -24,6 +24,7 @@ const SHELL = [
   './js/i18n/ar.js',
   './js/ui/app.js',
   './js/ui/dom.js',
+  './js/ui/components/viewer.js',
   './js/ui/views/home.js',
   './js/ui/views/batch.js',
   './js/ui/views/editor.js',

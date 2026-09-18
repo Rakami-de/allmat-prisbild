@@ -28,6 +28,8 @@ export const ICON = {
   chevron: svg('<path d="m6 9 6 6 6-6"/>'),
   save: svg('<path d="M12 4v11m0 0-4-4m4 4 4-4"/><path d="M5 19h14"/>'),
   share: svg('<path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M6 12v5.5A1.5 1.5 0 0 0 7.5 19h9a1.5 1.5 0 0 0 1.5-1.5V12"/>'),
+  edit: svg('<path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="m14 8 3 3"/>'),
+  zoom: svg('<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M11 8.5v5M8.5 11h5"/>'),
   sparkle: svg('<path d="M12 4l1.8 4.7L18.5 10l-4.7 1.8L12 16.5l-1.8-4.7L5.5 10l4.7-1.3z"/>'),
 };
 

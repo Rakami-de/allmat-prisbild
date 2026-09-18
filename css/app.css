@@ -318,6 +318,32 @@ a.round { color: inherit; text-decoration: none; }
 .result-share { position: absolute; inset-block-start: var(--space-2); inset-inline-end: var(--space-2); box-shadow: var(--shadow-raised); }   /* top corner: never covers the price */
 .result-share svg { width: 20px; height: 20px; }
 
+/* ---------- full-screen viewer ---------- */
+.result-open { display: block; width: 100%; position: relative; border-radius: var(--radius-md); }
+.result-open:active img { filter: brightness(0.9); }
+.result-zoom { position: absolute; inset-block-end: var(--space-2); inset-inline-start: var(--space-2); display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--radius-pill); background: #0E0E0E99; color: #fff; }
+.result-zoom svg { width: 18px; height: 18px; }
+.footer-links { display: flex; justify-content: space-between; }
+.footer-links .text-btn { display: inline-flex; align-items: center; gap: var(--space-1); }
+.footer-links svg { width: 18px; height: 18px; }
+
+.viewer { position: absolute; inset: 0; z-index: var(--z-sheet); display: flex; flex-direction: column; background: #0A0B0A; color: #fff; animation: fade-in var(--motion-fast) var(--ease-out); touch-action: none; }
+.viewer.is-leaving { animation: fade-in var(--motion-fast) var(--ease-exit) reverse forwards; }
+.viewer-bar { display: flex; align-items: center; justify-content: space-between; padding: calc(env(safe-area-inset-top) + var(--space-3)) var(--space-5) var(--space-3); }
+.viewer .round { background: #FFFFFF1F; border-color: transparent; color: #fff; }
+.viewer-counter { font-family: var(--font-price); font-weight: var(--weight-bold); font-size: var(--type-title); }
+.viewer-stage { flex: 1; min-height: 0; display: grid; place-items: center; overflow: hidden; touch-action: none; }
+.viewer-img { max-width: 100%; max-height: 100%; object-fit: contain; transform-origin: center; will-change: transform; -webkit-user-drag: none; pointer-events: none; }
+.viewer-nav { position: absolute; top: 50%; transform: translateY(-50%); }
+.viewer-prev { left: var(--space-3); }
+.viewer-next { right: var(--space-3); }
+.viewer-hint { text-align: center; font-size: var(--type-caption); color: #FFFFFF99; padding-block: var(--space-2); transition: opacity var(--motion-fast); }
+.viewer.is-zoomed .viewer-hint, .viewer.is-zoomed .viewer-nav { opacity: 0; pointer-events: none; }
+.viewer-actions { display: flex; gap: var(--space-3); padding: var(--space-3) var(--space-5) calc(env(safe-area-inset-bottom) + var(--space-4)); }
+.viewer-actions .btn { flex: 1; min-height: var(--action-height); text-decoration: none; }
+.viewer-actions .btn-secondary { background: #FFFFFF1F; border-color: transparent; color: #fff; }
+.viewer-actions .btn-primary { flex: 1.5; background: #fff; color: #0E0E0E; }
+
 /* ---------- sheet, toast, banner ---------- */
 .sheet-wrap { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; z-index: var(--z-sheet); }
 .scrim { position: absolute; inset: 0; background: var(--ui-scrim); animation: fade-in var(--motion-standard) var(--ease-out); }

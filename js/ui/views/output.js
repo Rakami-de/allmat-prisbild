@@ -1,10 +1,14 @@
 import { h, icon } from '../dom.js';
 import { generateAll, canShareFiles, shareFiles } from '../../core/export.js';
+import { readyItems } from '../../core/batch.js';
+import { planPages } from '../../core/collage.js';
+import { openViewer } from '../components/viewer.js';
 
 export function renderOutput(app) {
   const { t, state } = app;
   const controller = new AbortController();
   const urls = [];
+  let closeViewer = null;
   const el = h('main', { class: 'screen output' });
 
   // ---------- phase 1: prepare ----------
@@ -44,15 +48,37 @@ export function renderOutput(app) {
       try { await shareFiles(list); } catch (error) { app.fail(error); }
     };
 
-    const grid = h('ul', { class: 'results' }, files.map((file) => {
+    // Which product to open when the user wants to change an image. A Lista sheet holds many
+    // products, so it opens the first one on that sheet.
+    const items = readyItems(state.batch);
+    const pages = state.batch.template === 'lista' ? planPages(items.length) : null;
+    const editIdFor = (index) => (pages ? items[pages[index].start] : items[index])?.id;
+    const edit = (index) => app.go('editor', { id: editIdFor(index), from: 'output' });
+
+    const slides = files.map((file, index) => {
       const url = URL.createObjectURL(file);
       urls.push(url);
-      return h('li', { class: 'result' },
-        h('img', { src: url, alt: file.name, loading: 'lazy', decoding: 'async' }),
-        canShareFiles([file])
-          ? h('button', { class: 'round result-share', 'aria-label': t('output.share'), onclick: () => share([file]) }, icon('share'))
-          : h('a', { class: 'round result-share', href: url, download: file.name, 'aria-label': t('output.download') }, icon('save')));
-    }));
+      const shareable = canShareFiles([file]);
+      return {
+        url, file, shareable,
+        actions: (close) => [
+          h('button', { class: 'btn btn-secondary', onclick: () => { close(); edit(index); } }, icon('edit'), t('viewer.edit')),
+          shareable
+            ? h('button', { class: 'btn btn-primary', onclick: () => share([file]) }, icon('save'), t('viewer.save'))
+            : h('a', { class: 'btn btn-primary', href: url, download: file.name }, icon('save'), t('output.download')),
+        ],
+      };
+    });
+
+    const grid = h('ul', { class: 'results' }, slides.map((slide, index) =>
+      h('li', { class: 'result' },
+        h('button', {
+          class: 'result-open', 'aria-label': t('viewer.open'),
+          onclick: () => { closeViewer = openViewer({ layer: document.getElementById('layer'), slides, index, t }); },
+        }, h('img', { src: slide.url, alt: slide.file.name, loading: 'lazy', decoding: 'async' }), h('span', { class: 'result-zoom' }, icon('zoom'))),
+        slide.shareable
+          ? h('button', { class: 'round result-share', 'aria-label': t('output.share'), onclick: () => share([slide.file]) }, icon('share'))
+          : h('a', { class: 'round result-share', href: slide.url, download: slide.file.name, 'aria-label': t('output.download') }, icon('save')))));
 
     const canShareOne = files.length > 0 && canShareFiles([files[0]]);
     const actions = canShareAll
@@ -71,23 +97,26 @@ export function renderOutput(app) {
       grid,
       h('footer', { class: 'action-bar' },
         ...actions,
-        h('button', {
-          class: 'text-btn',
-          onclick: async () => {
-            const choice = await app.sheet({
-              title: t('output.newBatch'),
-              body: t('output.newBatchConfirm'),
-              actions: [{ id: 'yes', label: t('output.newBatch'), kind: 'btn-danger' }, { id: 'no', label: t('common.no') }],
-            });
-            if (choice === 'yes') { await app.discardBatch(); app.go('home'); }
-          },
-        }, t('output.newBatch'))));
+        h('div', { class: 'footer-links' },
+          h('button', { class: 'text-btn', onclick: () => app.go('batch') }, icon('edit'), t('output.edit')),
+          h('button', {
+            class: 'text-btn',
+            onclick: async () => {
+              const choice = await app.sheet({
+                title: t('output.newBatch'),
+                body: t('output.newBatchConfirm'),
+                actions: [{ id: 'yes', label: t('output.newBatch'), kind: 'btn-danger' }, { id: 'no', label: t('common.no') }],
+              });
+              if (choice === 'yes') { await app.discardBatch(); app.go('home'); }
+            },
+          }, t('output.newBatch')))));
   }
 
   return {
     el,
     destroy() {
       controller.abort();
+      closeViewer?.();
       urls.forEach((url) => URL.revokeObjectURL(url));
     },
   };

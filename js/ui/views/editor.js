@@ -14,7 +14,7 @@ const tidyPrice = (text) => {
   return `${int.replace(/ /g, ' ')}${dec ? `,${dec}` : ''}`;
 };
 
-export function renderEditor(app, { id }) {
+export function renderEditor(app, { id, from = 'batch' }) {
   const { t, state } = app;
   const items = () => state.batch.items;
   const current = () => items().find((item) => item.id === id);
@@ -89,7 +89,7 @@ export function renderEditor(app, { id }) {
 
   canvas.addEventListener('pointerdown', (event) => {
     if (!photo) return;
-    canvas.setPointerCapture(event.pointerId);
+    try { canvas.setPointerCapture(event.pointerId); } catch { /* pointer already gone */ }
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
@@ -187,12 +187,14 @@ export function renderEditor(app, { id }) {
   const onSaved = () => { saved.classList.add('is-visible'); clearTimeout(savedTimer); savedTimer = setTimeout(() => saved.classList.remove('is-visible'), 1400); };
   document.addEventListener('allmat:saved', onSaved);
 
-  const goTo = (offset) => app.go('editor', { id: items()[index + offset].id });
+  // Opened from the finished images? Then "back" and "done" return there and rebuild them.
+  const leave = () => app.go(from === 'output' ? 'output' : 'batch');
+  const goTo = (offset) => app.go('editor', { id: items()[index + offset].id, from });
   const isLast = index === total - 1;
 
   const el = h('main', { class: 'screen editor' },
     h('header', { class: 'bar' },
-      h('button', { class: 'round', 'aria-label': t('common.back'), onclick: () => app.go('batch') }, icon('back', 'icon flip-rtl')),
+      h('button', { class: 'round', 'aria-label': t('common.back'), onclick: leave }, icon('back', 'icon flip-rtl')),
       h('div', { class: 'bar-title' }, h('h1', {}, t('editor.position', { n: index + 1, total }))),
       saved),
     h('div', { class: 'preview' }, canvas, h('p', { class: 'muted small preview-hint' }, t('editor.photoHint'))),
@@ -209,8 +211,8 @@ export function renderEditor(app, { id }) {
       more),
     h('footer', { class: 'action-bar action-bar-split' },
       h('button', { class: 'btn btn-secondary', disabled: index === 0, onclick: () => goTo(-1) }, icon('back', 'icon flip-rtl'), t('editor.prev')),
-      h('button', { class: 'btn btn-primary', onclick: () => (isLast ? app.go('batch') : goTo(1)) },
-        t(isLast ? 'editor.done' : 'editor.next'), isLast ? icon('check') : icon('forward', 'icon flip-rtl'))));
+      h('button', { class: 'btn btn-primary', onclick: () => (isLast || from === 'output' ? leave() : goTo(1)) },
+        t(isLast || from === 'output' ? 'editor.done' : 'editor.next'), isLast || from === 'output' ? icon('check') : icon('forward', 'icon flip-rtl'))));
 
   if (!fields.price) setTimeout(() => { if (alive && matchMedia('(pointer: fine)').matches) priceInput.focus(); }, 300);
 
