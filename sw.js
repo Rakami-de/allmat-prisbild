@@ -1,5 +1,5 @@
 // App-shell cache. Bump VERSION on every deploy so installed phones pick up the new files.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const PREFIX = 'allmat-prisbild-';
 const CACHE = `${PREFIX}${VERSION}`;
 

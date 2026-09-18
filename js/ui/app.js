@@ -229,9 +229,12 @@ function watchForUpdates() {
       });
     });
   }).catch(() => {});
+  // The very first install also fires controllerchange (clients.claim); reloading then would
+  // interrupt someone who has already started picking photos. Only reload for real updates.
+  const hadController = Boolean(navigator.serviceWorker.controller);
   let reloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloaded) return;
+    if (reloaded || !hadController) return;
     reloaded = true;
     location.reload();
   });
