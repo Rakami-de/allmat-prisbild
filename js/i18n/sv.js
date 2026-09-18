@@ -6,6 +6,7 @@ export default {
   'home.subtitle': 'Fota varorna, skriv priset – klart.',
   'home.takePhoto': 'Ta foto',
   'home.pickPhotos': 'Välj bilder',
+  'home.lab': 'Proffsbilder · test',
   'home.resume.title': 'Fortsätt där du slutade',
   'home.resume.count': '{n} bilder sparade',
   'home.resume.open': 'Öppna',

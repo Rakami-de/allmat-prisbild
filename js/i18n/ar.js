@@ -6,6 +6,7 @@ export default {
   'home.subtitle': 'صوّر المنتجات، اكتب السعر – وخلص.',
   'home.takePhoto': 'التقط صورة',
   'home.pickPhotos': 'اختر صور',
+  'home.lab': 'صور احترافية · تجربة',
   'home.resume.title': 'كمّل من وين وقفت',
   'home.resume.count': 'صور محفوظة: {n}',
   'home.resume.open': 'افتح',

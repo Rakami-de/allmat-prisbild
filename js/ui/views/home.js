@@ -37,5 +37,7 @@ export function renderHome(app) {
     h('div', { class: 'home-actions' },
       resume,
       h('button', { class: 'btn btn-primary btn-large', onclick: app.pickCamera }, icon('camera'), t('home.takePhoto')),
-      h('button', { class: 'btn btn-secondary btn-large', onclick: app.pickLibrary }, icon('photos'), t('home.pickPhotos'))));
+      h('button', { class: 'btn btn-secondary btn-large', onclick: app.pickLibrary }, icon('photos'), t('home.pickPhotos')),
+      // Experiment, isolated in /proffs — delete this link together with that folder.
+      h('a', { class: 'lab-link', href: './proffs/' }, icon('sparkle'), t('home.lab'))));
 }

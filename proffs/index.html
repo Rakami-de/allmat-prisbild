@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="sv" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <title>Proffsbilder · test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#F7F7F4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#10120F" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/app.css">
+  <style>
+    .badge { padding: 2px 10px; border-radius: var(--radius-pill); background: var(--ui-accent-soft); color: var(--ui-accent); font-size: var(--type-caption); font-weight: var(--weight-bold); }
+    .models { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    .model { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: var(--space-3) var(--space-4); min-height: 68px; border-radius: var(--radius-md); background: var(--ui-surface); border: var(--border-hairline) solid var(--ui-border); text-align: start; }
+    .model strong { font-size: var(--type-body); }
+    .model span { font-size: var(--type-caption); color: var(--ui-text-muted); }
+    .model.is-selected { border-color: var(--ui-text); box-shadow: inset 0 0 0 1px var(--ui-text); }
+    .pickers { display: flex; flex-direction: column; gap: var(--space-3); }
+    .status { display: none; flex-direction: column; gap: var(--space-2); padding: var(--space-4); border-radius: var(--radius-md); background: var(--ui-surface); border: var(--border-hairline) solid var(--ui-border); }
+    .is-busy .status, .has-error .status { display: flex; }
+    .has-error .status { border-color: var(--ui-danger); color: var(--ui-danger); }
+    .has-error .progress { display: none; }
+    .progress-fill.is-indeterminate { animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: 0.35; } }
+    .is-busy .pickers button { opacity: 0.4; pointer-events: none; }
+    #preview { width: 100%; height: auto; border-radius: var(--radius-md); box-shadow: var(--shadow-raised); }
+    .backdrops { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+    .backdrop { width: var(--touch-min); height: var(--touch-min); border-radius: var(--radius-pill); border: 2px solid var(--ui-border); background: var(--swatch); }
+    .backdrop[data-backdrop='rutig'] { background: repeating-conic-gradient(#DADAD5 0 25%, #F4F4F1 0 50%) 0 0 / 16px 16px; }
+    .backdrop.is-selected { border-color: var(--ui-text); box-shadow: 0 0 0 2px var(--ui-bg), 0 0 0 4px var(--ui-text); }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+    .result { display: flex; flex-direction: column; gap: var(--space-4); }
+    .stats { font-size: var(--type-caption); color: var(--ui-text-muted); font-variant-numeric: tabular-nums; }
+    .tip { font-size: var(--type-caption); color: var(--ui-text-muted); padding-bottom: calc(env(safe-area-inset-bottom) + var(--space-6)); }
+    .split { display: flex; gap: var(--space-3); }
+    .split .btn { flex: 1; }
+    .split .btn-primary { flex: 1.6; }
+    a.round { display: inline-grid; }
+  </style>
+</head>
+<body>
+  <div id="view" class="view">
+    <main class="screen">
+      <header class="bar">
+        <a class="round" id="back" href="../"><span class="icon flip-rtl"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></span></a>
+        <div class="bar-title"><h1 data-t="title"></h1></div>
+        <span class="badge" data-t="badge"></span>
+      </header>
+
+      <p class="muted" data-t="intro"></p>
+
+      <section>
+        <h2 class="label" data-t="model"></h2>
+        <div class="models">
+          <button class="model" data-model="fast"><strong data-t="fast"></strong><span data-t="fastHint"></span></button>
+          <button class="model" data-model="fine"><strong data-t="fine"></strong><span data-t="fineHint"></span></button>
+        </div>
+      </section>
+
+      <div class="pickers">
+        <button class="btn btn-primary btn-large" id="shoot" data-t="shoot"></button>
+        <button class="btn btn-secondary btn-large" id="pick" data-t="pick"></button>
+      </div>
+
+      <div class="status" role="status">
+        <span id="statusText"></span>
+        <div class="progress"><div class="progress-fill" id="statusBar"></div></div>
+        <span class="small muted" data-t="crash"></span>
+      </div>
+
+      <section class="result" id="result" hidden>
+        <canvas id="preview" width="1080" height="1080"></canvas>
+        <div class="row">
+          <div>
+            <h2 class="label" data-t="backdrop"></h2>
+            <div class="backdrops">
+              <button class="backdrop" data-backdrop="rod" aria-label="Röd"></button>
+              <button class="backdrop" data-backdrop="gul" aria-label="Gul"></button>
+              <button class="backdrop" data-backdrop="gron" aria-label="Grön"></button>
+              <button class="backdrop" data-backdrop="svart" aria-label="Svart"></button>
+              <button class="backdrop" data-backdrop="vit" aria-label="Vit"></button>
+              <button class="backdrop" data-backdrop="rutig" aria-label="Genomskinlig"></button>
+            </div>
+          </div>
+          <button class="btn btn-secondary btn-small" id="compare"></button>
+        </div>
+        <p class="stats" id="stats" dir="auto"></p>
+        <div class="split">
+          <button class="btn btn-secondary" id="again" data-t="again"></button>
+          <button class="btn btn-primary" id="save" data-t="save"></button>
+        </div>
+      </section>
+
+      <p class="tip" data-t="tip"></p>
+    </main>
+  </div>
+
+  <input id="shootInput" type="file" accept="image/*" capture="environment" hidden>
+  <input id="pickInput" type="file" accept="image/*" hidden>
+  <script type="module" src="./proffs.js"></script>
+</body>
+</html>
