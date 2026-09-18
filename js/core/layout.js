@@ -4,7 +4,7 @@
 // Colours are roles ('block', 'paper', 'on', 'ink', 'muted', 'accent') resolved per colourway.
 
 export const SIZE = 1080;
-export const TEMPLATES = ['sockel', 'kort', 'signatur'];
+export const TEMPLATES = ['sockel', 'kort', 'signatur', 'lista'];   // 'lista' is laid out by collage.js
 
 export const FONT = {
   price: 'Barlow Condensed',
@@ -51,7 +51,7 @@ const TEMPLATE = {
     photo: { x: 0, y: 0, w: S, h: 850 },
     shapes: [
       { type: 'rect', x: 0, y: 830, w: S, h: 250, fill: 'block' },
-      { type: 'strokeRect', x: 28, y: 28, w: 1024, h: 1024, line: 3, fill: 'on' },
+      { type: 'strokeRect', x: 28, y: 28, w: 1024, h: 1024, line: 3, fill: 'line' },
       { type: 'circle', cx: 540, cy: 830, r: 104, fill: 'block' },
       { type: 'circle', cx: 540, cy: 830, r: 92, fill: 'paper' },
     ],
@@ -107,13 +107,14 @@ function priceRow(size, { priceParts, unit, multiQty }, measure) {
   return { width: cursor + column, cap, parts };
 }
 
-function fitPrice(input, region, hasOld, measure) {
+// Also used by collage.js, which passes much smaller regions (region.min overrides the floor).
+export function fitPrice(input, region, hasOld, measure) {
   const [x0, x1] = region.x;
   const y0 = region.y[0] + (hasOld ? OLD_ROW : 0);
   const y1 = region.y[1];
   let row = null;
   let fits = false;
-  for (let size = region.max; size >= INT_MIN; size -= 2) {
+  for (let size = region.max; size >= (region.min ?? INT_MIN); size -= 2) {
     row = priceRow(size, input, measure);
     if (row.width <= x1 - x0 && row.cap <= y1 - y0) { fits = true; break; }
   }

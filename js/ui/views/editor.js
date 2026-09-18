@@ -1,8 +1,9 @@
 import { h, icon } from '../dom.js';
-import { UNITS, MODES, itemStatus, updateFields, updateCrop } from '../../core/batch.js';
+import { UNITS, MODES, itemStatus, readyItems, updateFields, updateCrop } from '../../core/batch.js';
 import { parsePrice, formatPriceParts } from '../../core/price.js';
 import { loadImage, releaseCanvas } from '../../core/photo.js';
-import { loadRenderAssets, renderItem } from '../../core/render.js';
+import { loadRenderAssets, renderItem, renderCellPreview } from '../../core/render.js';
+import { planPages } from '../../core/collage.js';
 import { getPhoto } from '../../core/storage.js';
 import { SIZE, photoSlot } from '../../core/layout.js';
 
@@ -27,6 +28,18 @@ export function renderEditor(app, { id }) {
   let frame = 0;
   let alive = true;
 
+  // Lista draws one sheet for many products; the preview shows this product's card at the size
+  // it will really have, which depends on how many products share its page.
+  const isList = state.batch.template === 'lista';
+  let slot = photoSlot(state.batch.template);
+  function pageOf(item) {
+    const ready = readyItems(state.batch);
+    const pool = ready.includes(item) ? ready : [...ready, item];
+    const at = pool.indexOf(item);
+    const page = planPages(pool.length).find((p) => at >= p.start && at < p.end);
+    return pool.slice(page.start, page.end);
+  }
+
   // ---------- live preview ----------
 
   const hintEl = h('p', { class: 'field-hint', role: 'status' });
@@ -37,7 +50,10 @@ export function renderEditor(app, { id }) {
     frame = requestAnimationFrame(() => {
       if (!alive || !assets) return;
       const item = current();
-      const layout = renderItem(canvas, { item, photo, colorway: state.batch.colorway, template: state.batch.template, assets });
+      const layout = isList
+        ? renderCellPreview(canvas, { item, photo, batch: state.batch, pageItems: pageOf(item) })
+        : renderItem(canvas, { item, photo, colorway: state.batch.colorway, template: state.batch.template, assets });
+      slot = layout.photo;
       const status = itemStatus(item);
       const problem = status === 'invalid-price' || status === 'invalid-old-price'
         ? t(`status.${status}`)
@@ -66,7 +82,6 @@ export function renderEditor(app, { id }) {
   let pinchStart = null;
 
   function overflow() {
-    const slot = photoSlot(state.batch.template);
     const { zoom } = current().crop;
     const scale = Math.max(slot.w / photo.naturalWidth, slot.h / photo.naturalHeight) * zoom;
     return { x: photo.naturalWidth * scale - slot.w, y: photo.naturalHeight * scale - slot.h };
@@ -155,8 +170,8 @@ export function renderEditor(app, { id }) {
   const more = h('details', { class: 'more', open: hasExtras },
     h('summary', {}, h('span', {}, t('editor.more')), icon('chevron', 'icon more-chevron')),
     textField('name', 'editor.name', 'editor.namePlaceholder', { maxLength: 60 }),
-    textField('weight', 'editor.weight', 'editor.weightPlaceholder', { maxLength: 16, dir: 'ltr' }),
-    textField('note', 'editor.note', 'editor.notePlaceholder', { maxLength: 80 }),
+    isList ? null : textField('weight', 'editor.weight', 'editor.weightPlaceholder', { maxLength: 16, dir: 'ltr' }),
+    isList ? null : textField('note', 'editor.note', 'editor.notePlaceholder', { maxLength: 80 }),
     h('div', { class: 'field' },
       h('label', { for: 'multiQty' }, t('editor.multiQty')),
       h('input', {
@@ -189,8 +204,8 @@ export function renderEditor(app, { id }) {
       h('div', { class: 'field' },
         h('span', { class: 'label' }, t('editor.unit')),
         chipGroup('editor.unit', UNITS, fields.unit, (unit) => setFields({ unit }), (unit) => unit || t('editor.unit.none'))),
-      h('div', { class: 'field' }, h('span', { class: 'label' }, t('editor.mode')), modeControl),
-      oldPriceRow,
+      isList ? null : h('div', { class: 'field' }, h('span', { class: 'label' }, t('editor.mode')), modeControl),
+      isList ? null : oldPriceRow,
       more),
     h('footer', { class: 'action-bar action-bar-split' },
       h('button', { class: 'btn btn-secondary', disabled: index === 0, onclick: () => goTo(-1) }, icon('back', 'icon flip-rtl'), t('editor.prev')),

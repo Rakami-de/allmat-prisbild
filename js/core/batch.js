@@ -1,7 +1,8 @@
 import { parsePrice, parseMultiBuy } from './price.js';
 import { TEMPLATES } from './layout.js';
 
-export const COLORWAYS = ['rod', 'gron', 'svart'];
+export const COLORWAYS = ['rod', 'gron', 'svart', 'gul'];
+export const LIST_STYLES = ['ljus', 'mork', 'farg'];
 export { TEMPLATES };
 export const UNITS = ['', '/kg', '/st', '/förp', '/liter', '/100g'];
 export const MODES = ['standard', 'nyhet', 'kampanj'];
@@ -10,11 +11,12 @@ const BLANK_FIELDS = {
   price: '', unit: '', weight: '', name: '', note: '',
   mode: 'standard', oldPrice: '', multiQty: '',
 };
+const BLANK_LIST = { style: 'ljus', title: 'Veckans erbjudanden', note: '', footer: '' };
 const ALLOWED = { unit: UNITS, mode: MODES };
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
 export function createBatch() {
-  return { template: 'sockel', colorway: 'rod', items: [] };
+  return { template: 'sockel', colorway: 'rod', list: { ...BLANK_LIST }, items: [] };
 }
 
 export function addItem(batch, { id, photoKey }) {
@@ -62,6 +64,17 @@ export function setColorway(batch, colorway) {
 
 export function setTemplate(batch, template) {
   return TEMPLATES.includes(template) ? { ...batch, template } : batch;
+}
+
+// Options that only the Lista template uses: sheet style and the three free-text lines.
+export function setListOptions(batch, patch) {
+  const list = { ...BLANK_LIST, ...batch.list };
+  for (const [key, value] of Object.entries(patch)) {
+    if (!(key in BLANK_LIST)) continue;
+    if (key === 'style' && !LIST_STYLES.includes(value)) continue;
+    list[key] = String(value);
+  }
+  return { ...batch, list };
 }
 
 export function itemStatus(item) {

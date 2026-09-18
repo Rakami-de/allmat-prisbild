@@ -80,3 +80,13 @@ Visual direction of the app UI and the price badge: short, tightly-briefed sessi
 ## Known open risk
 
 Whether Facebook's share extension accepts a 10–15 file batch can only be confirmed on the owner's phone. The save-to-Photos route is the guaranteed path; sharing directly is the convenience path.
+
+## Addendum 2026-09-18 — templates and the Lista sheet
+
+The single bordered frame described above was replaced, at the owner's request, by code-drawn minimalist templates chosen per batch: `Sockel`, `Kort`, `Signatur` (one image per product, `js/core/layout.js`) and `Lista` (many products on one sheet, `js/core/collage.js`). No generated artwork is used anywhere.
+
+- Colourways: `Röd`, `Grön`, `Svart`, `Gul`. The same role names (`block`, `on`, `paper`, `ink` …) drive every template.
+- Lista: each product is a card — photo on top, a colour tag with the price beneath; the product name is optional and is dropped on dense sheets. Up to 20 products per sheet; more are split into balanced sheets (25 → 13 + 12) marked `1/2`, `2/2`. Few products give a square sheet, more give 1080×1350.
+- Lista sheet styles share one palette per colourway: `Ljus` (white sheet, colour tags), `Mörk` (dark sheet, colour tags; Svart flips to white tags), `Färg` (colour sheet, white tags). Header: logo, title label, shop name, a note top-right; footer line. All three texts are optional.
+- The editor preview for Lista shows the single card at its true proportions, so panning the photo matches the final sheet. Mode, old price, weight and comment are not drawn on Lista and are hidden in its editor.
+- With no product name, Sockel and Kort enlarge and centre the logo lockup; Signatur shows the shop name in the name position.

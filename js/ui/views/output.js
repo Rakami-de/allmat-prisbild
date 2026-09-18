@@ -48,7 +48,7 @@ export function renderOutput(app) {
       const url = URL.createObjectURL(file);
       urls.push(url);
       return h('li', { class: 'result' },
-        h('img', { src: url, alt: file.name, loading: 'lazy', decoding: 'async', width: 1080, height: 1080 }),
+        h('img', { src: url, alt: file.name, loading: 'lazy', decoding: 'async' }),
         canShareFiles([file])
           ? h('button', { class: 'round result-share', 'aria-label': t('output.share'), onclick: () => share([file]) }, icon('share'))
           : h('a', { class: 'round result-share', href: url, download: file.name, 'aria-label': t('output.download') }, icon('save')));

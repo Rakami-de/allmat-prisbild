@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createBatch, addItem, removeItem, moveItem, updateFields, updateCrop,
-  setColorway, setTemplate, itemStatus, readyItems, UNITS, COLORWAYS,
+  setColorway, setTemplate, setListOptions, itemStatus, readyItems, UNITS, COLORWAYS,
 } from '../js/core/batch.js';
 
 const three = () => ['a', 'b', 'c'].reduce(
@@ -10,8 +10,10 @@ const three = () => ['a', 'b', 'c'].reduce(
 const ids = (b) => b.items.map((i) => i.id);
 
 test('new batch is empty and red', () => {
-  assert.deepEqual(createBatch(), { template: 'sockel', colorway: 'rod', items: [] });
-  assert.deepEqual(COLORWAYS, ['rod', 'gron', 'svart']);
+  const fresh = createBatch();
+  assert.deepEqual([fresh.template, fresh.colorway, fresh.items], ['sockel', 'rod', []]);
+  assert.deepEqual(fresh.list, { style: 'ljus', title: 'Veckans erbjudanden', note: '', footer: '' });
+  assert.deepEqual(COLORWAYS, ['rod', 'gron', 'svart', 'gul']);
   assert.equal(UNITS[0], '');
 });
 
@@ -64,6 +66,15 @@ test('setTemplate accepts only known templates', () => {
   assert.equal(setTemplate(createBatch(), 'kort').template, 'kort');
   assert.equal(setTemplate(createBatch(), 'signatur').template, 'signatur');
   assert.equal(setTemplate(createBatch(), 'retro').template, 'sockel');
+});
+
+test('setListOptions validates the style and ignores unknown keys', () => {
+  const b = setListOptions(createBatch(), { style: 'mork', title: 'Helgens priser', hacker: 1 });
+  assert.deepEqual(b.list, { style: 'mork', title: 'Helgens priser', note: '', footer: '' });
+  assert.equal(setListOptions(b, { style: 'neon' }).list.style, 'mork');
+  assert.equal(setTemplate(createBatch(), 'lista').template, 'lista');
+  // Batches saved before the Lista template existed have no list options yet.
+  assert.equal(setListOptions({ template: 'sockel', colorway: 'rod', items: [] }, { note: 'x' }).list.style, 'ljus');
 });
 
 test('itemStatus', () => {

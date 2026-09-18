@@ -1,7 +1,8 @@
 import { h, icon } from '../dom.js';
-import { COLORWAYS, TEMPLATES, itemStatus, moveItem, readyItems, setColorway, setTemplate } from '../../core/batch.js';
+import { COLORWAYS, TEMPLATES, LIST_STYLES, itemStatus, moveItem, readyItems, setColorway, setTemplate, setListOptions } from '../../core/batch.js';
+import { planPages } from '../../core/collage.js';
 import { parsePrice, formatPriceParts } from '../../core/price.js';
-import { STORE } from '../../config/store.js';
+import { STORE, listPalette } from '../../config/store.js';
 
 let reordering = false;
 
@@ -9,6 +10,7 @@ let reordering = false;
 const TEMPLATE_ICON = {
   sockel: '<rect width="48" height="48" rx="6" fill="#B9BDB2"/><rect y="37" width="48" height="11" fill="#fff"/><rect x="27" y="33" width="21" height="15" fill="var(--swatch)"/>',
   kort: '<rect width="48" height="48" rx="6" fill="#B9BDB2"/><rect x="3" y="34" width="42" height="11" rx="3" fill="#fff"/><path d="M27 34h15a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H27z" fill="var(--swatch)"/>',
+  lista: '<rect width="48" height="48" rx="6" fill="#fff" stroke="#B9BDB2"/><rect x="5" y="5" width="16" height="4" rx="1" fill="var(--swatch)"/>' + [0, 1, 2].flatMap((c) => [0, 1].map((r) => `<rect x="${5 + c * 13.5}" y="${13 + r * 16}" width="11" height="9" fill="#B9BDB2"/><rect x="${5 + c * 13.5}" y="${22 + r * 16}" width="11" height="4" fill="var(--swatch)"/>`)).join(''),
   signatur: '<rect width="48" height="48" rx="6" fill="#B9BDB2"/><rect y="36" width="48" height="12" fill="var(--swatch)"/><circle cx="24" cy="36" r="6" fill="#fff" stroke="var(--swatch)" stroke-width="1.5"/><rect x="2.5" y="2.5" width="43" height="43" fill="none" stroke="#fff" stroke-width="1"/>',
 };
 
@@ -69,12 +71,12 @@ export function renderBatch(app) {
 
   const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': t('batch.colorway') },
     COLORWAYS.map((key) => h('button', {
-      class: `swatch ${batch.colorway === key ? 'is-selected' : ''}`,
+      class: `swatch template ${batch.colorway === key ? 'is-selected' : ''}`,
       role: 'radio',
       'aria-checked': String(batch.colorway === key),
       onclick: () => app.updateBatch((b) => setColorway(b, key)),
     },
-    h('span', { class: 'swatch-chip', style: `--swatch:${STORE.colorways[key].swatch}` }, batch.colorway === key ? icon('check') : null),
+    h('span', { class: 'swatch-chip', style: `--swatch:${STORE.colorways[key].swatch};color:${STORE.colorways[key].on}` }, batch.colorway === key ? icon('check') : null),
     h('span', {}, t(`batch.colorway.${key}`)))));
 
   const swatch = STORE.colorways[batch.colorway].swatch;
@@ -87,6 +89,33 @@ export function renderBatch(app) {
     },
     h('span', { class: 'template-icon', style: `--swatch:${swatch}`, html: `<svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">${TEMPLATE_ICON[key]}</svg>` }),
     h('span', {}, t(`batch.template.${key}`)))));
+
+  // Lista only: sheet style plus the three free-text lines. Typing must not repaint the screen
+  // (that would drop the keyboard), so text goes in with repaint: false.
+  const isList = batch.template === 'lista';
+  const list = { style: 'ljus', title: '', note: '', footer: '', ...batch.list };
+  const sheets = planPages(ready).length;
+  const listField = (key, maxLength) => h('div', { class: 'field' },
+    h('label', { for: `list-${key}` }, t(`list.${key}`)),
+    h('input', {
+      id: `list-${key}`, class: 'input', type: 'text', dir: 'auto', lang: 'sv', autocomplete: 'off', maxLength,
+      value: list[key], placeholder: t(`list.${key}.placeholder`),
+      oninput: (e) => app.updateBatch((b) => setListOptions(b, { [key]: e.target.value }), { repaint: false }),
+    }));
+  const listOptions = !isList ? null : h('section', { class: 'section list-options' },
+    h('h2', { class: 'label' }, t('list.style')),
+    h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': t('list.style') },
+      LIST_STYLES.map((key) => {
+        const palette = listPalette(batch.colorway, key);
+        return h('button', {
+          class: `swatch template ${list.style === key ? 'is-selected' : ''}`, role: 'radio', 'aria-checked': String(list.style === key),
+          onclick: () => app.updateBatch((b) => setListOptions(b, { style: key })),
+        },
+        h('span', { class: 'style-icon', style: `--paper:${palette.paper};--tag:${palette.tag};--label:${palette.label}` }, h('i', {}), h('b', {}), h('b', {}), h('b', {})),
+        h('span', {}, t(`list.style.${key}`)));
+      })),
+    listField('title', 40), listField('note', 40), listField('footer', 70),
+    sheets > 1 ? h('p', { class: 'hint' }, t('list.sheets', { n: sheets })) : null);
 
   return h('main', { class: 'screen batch' },
     h('header', { class: 'bar' },
@@ -105,6 +134,8 @@ export function renderBatch(app) {
     h('section', { class: 'section' },
       h('h2', { class: 'label' }, t('batch.colorway')),
       swatches),
+
+    listOptions,
 
     h('ul', { class: 'thumbs' },
       batch.items.map((item, index) => thumbCard(app, item, index, total)),
